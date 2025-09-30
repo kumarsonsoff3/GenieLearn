@@ -33,7 +33,7 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
@@ -72,7 +72,7 @@ const Layout = ({ children }) => {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100"
+                    className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100 touch-manipulation"
                   >
                     <Avatar className="h-9 w-9 border-2 border-gray-200 hover:border-blue-300 transition-colors">
                       <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
@@ -81,7 +81,14 @@ const Layout = ({ children }) => {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64" align="end" forceMount>
+                <DropdownMenuContent
+                  className="w-64 z-[9999] shadow-xl border bg-white"
+                  align="end"
+                  forceMount
+                  sideOffset={8}
+                  avoidCollisions={true}
+                  collisionPadding={8}
+                >
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-2 p-2">
                       <div className="flex items-center space-x-3">
@@ -105,34 +112,39 @@ const Layout = ({ children }) => {
                   <DropdownMenuItem asChild>
                     <Link
                       to="/profile"
-                      className="flex items-center space-x-2 cursor-pointer"
+                      className="flex items-center space-x-2 cursor-pointer touch-manipulation py-3"
                     >
                       <User className="h-4 w-4" />
                       <span>Profile Settings</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center space-x-2 cursor-pointer"
-                    >
-                      <Home className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/groups"
-                      className="flex items-center space-x-2 cursor-pointer"
-                    >
-                      <Users className="h-4 w-4" />
-                      <span>Groups</span>
-                    </Link>
-                  </DropdownMenuItem>
+
+                  {/* Mobile Navigation Items - shown only on mobile */}
+                  <div className="block md:hidden">
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center space-x-2 cursor-pointer touch-manipulation py-3"
+                      >
+                        <Home className="h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/groups"
+                        className="flex items-center space-x-2 cursor-pointer touch-manipulation py-3"
+                      >
+                        <Users className="h-4 w-4" />
+                        <span>Groups</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="flex items-center space-x-2 cursor-pointer text-red-600 focus:text-red-600"
+                    className="flex items-center space-x-2 cursor-pointer text-red-600 focus:text-red-600 touch-manipulation py-3"
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Log out</span>

@@ -284,7 +284,7 @@ const Dashboard = () => {
                           Create and join communities
                         </div>
                       </div>
-                      <Badge className="ml-auto bg-green-100 text-green-800">
+                      <Badge className="ml-auto bg-green-100 text-green-800 hover:bg-green-200 hover:text-green-900 transition-colors">
                         Live
                       </Badge>
                     </div>
@@ -299,7 +299,7 @@ const Dashboard = () => {
                           Customize your experience
                         </div>
                       </div>
-                      <Badge className="ml-auto bg-blue-100 text-blue-800">
+                      <Badge className="ml-auto bg-blue-100 text-blue-800 hover:bg-blue-200 hover:text-blue-900 transition-colors">
                         Live
                       </Badge>
                     </div>

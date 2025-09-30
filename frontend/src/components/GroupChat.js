@@ -27,6 +27,7 @@ const GroupChat = ({ group, onBack }) => {
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const connectWebSocketRef = useRef(null);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -46,10 +47,19 @@ const GroupChat = ({ group, onBack }) => {
   useEffect(() => {
     if (!group.id || !token) return;
 
+    let currentWs = null;
+    let reconnectTimeout = null;
+
     const connectWebSocket = () => {
+      // Clear any existing connection
+      if (currentWs) {
+        currentWs.close();
+      }
+
       const websocket = new WebSocket(
         `${WS_URL}/api/ws/${group.id}?token=${token}`
       );
+      currentWs = websocket;
 
       websocket.onopen = () => {
         console.log("WebSocket connected");
@@ -72,7 +82,15 @@ const GroupChat = ({ group, onBack }) => {
           setMessages(prev => [...prev, newMsg]);
         } else if (data.type === "system") {
           // Handle system messages (user joined/left)
-          console.log("System message:", data.content);
+          const systemMsg = {
+            id: `system-${Date.now()}-${Math.random()}`,
+            content: data.content,
+            sender_id: "system",
+            sender_name: "System",
+            timestamp: new Date(data.timestamp),
+            type: "system",
+          };
+          setMessages(prev => [...prev, systemMsg]);
         }
       };
 
@@ -80,8 +98,8 @@ const GroupChat = ({ group, onBack }) => {
         console.log("WebSocket disconnected");
         setIsConnected(false);
         setWs(null);
-        // Attempt to reconnect after 3 seconds
-        setTimeout(connectWebSocket, 3000);
+        // Disable auto-reconnection to prevent duplicate connections
+        // reconnectTimeout = setTimeout(connectWebSocket, 3000);
       };
 
       websocket.onerror = error => {
@@ -91,14 +109,24 @@ const GroupChat = ({ group, onBack }) => {
     };
 
     connectWebSocket();
+    connectWebSocketRef.current = connectWebSocket;
 
     // Cleanup on unmount
     return () => {
-      if (ws) {
-        ws.close();
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (currentWs) {
+        currentWs.close();
       }
     };
   }, [group.id, token]);
+
+  const handleReconnect = () => {
+    if (connectWebSocketRef.current) {
+      connectWebSocketRef.current();
+    }
+  };
 
   const loadMessageHistory = async () => {
     try {
@@ -185,12 +213,22 @@ const GroupChat = ({ group, onBack }) => {
           <p className="text-sm text-gray-600 mt-1">
             {group.member_count} member{group.member_count !== 1 ? "s" : ""}
             {!isConnected && (
-              <span className="text-red-500 ml-2 font-medium">
-                • Disconnected
-              </span>
+              <>
+                <span className="text-red-500 ml-2 font-medium hover:text-red-600 transition-colors">
+                  • Disconnected
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleReconnect}
+                  className="ml-2 text-xs h-6 px-2"
+                >
+                  Reconnect
+                </Button>
+              </>
             )}
             {isConnected && (
-              <span className="text-green-500 ml-2 font-medium">
+              <span className="text-green-500 ml-2 font-medium hover:text-green-600 transition-colors">
                 • Connected
               </span>
             )}
@@ -210,57 +248,71 @@ const GroupChat = ({ group, onBack }) => {
             </div>
 
             {/* Messages for this date */}
-            {dateMessages.map(message => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.sender_id === user?.id
-                    ? "justify-end"
-                    : "justify-start"
-                } mb-3`}
-              >
-                <div
-                  className={`max-w-xs lg:max-w-md ${
-                    message.sender_id === user?.id ? "order-2" : "order-1"
-                  }`}
-                >
-                  {message.sender_id !== user?.id && (
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-xs">
-                          {message.sender_name
-                            .split(" ")
-                            .map(n => n[0])
-                            .join("")
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs text-gray-600">
-                        {message.sender_name}
-                      </span>
+            {dateMessages.map(message => {
+              // System messages (user joined/left)
+              if (message.type === "system") {
+                return (
+                  <div key={message.id} className="flex justify-center mb-3">
+                    <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
+                      {message.content}
                     </div>
-                  )}
+                  </div>
+                );
+              }
+
+              // Regular messages
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${
+                    message.sender_id === user?.id
+                      ? "justify-end"
+                      : "justify-start"
+                  } mb-3`}
+                >
                   <div
-                    className={`px-4 py-2 rounded-lg shadow-sm ${
-                      message.sender_id === user?.id
-                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-none"
-                        : "bg-white border border-gray-200 text-gray-900 rounded-bl-none"
+                    className={`max-w-xs lg:max-w-md ${
+                      message.sender_id === user?.id ? "order-2" : "order-1"
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
-                    <p
-                      className={`text-xs mt-1 ${
+                    {message.sender_id !== user?.id && (
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs">
+                            {message.sender_name
+                              .split(" ")
+                              .map(n => n[0])
+                              .join("")
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-gray-600">
+                          {message.sender_name}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className={`px-4 py-2 rounded-lg shadow-sm ${
                         message.sender_id === user?.id
-                          ? "text-blue-100"
-                          : "text-gray-500"
+                          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-none"
+                          : "bg-white border border-gray-200 text-gray-900 rounded-bl-none"
                       }`}
                     >
-                      {formatTime(message.timestamp)}
-                    </p>
+                      <p className="text-sm">{message.content}</p>
+                      <p
+                        className={`text-xs mt-1 ${
+                          message.sender_id === user?.id
+                            ? "text-blue-100"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {formatTime(message.timestamp)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ))}
         <div ref={messagesEndRef} />
