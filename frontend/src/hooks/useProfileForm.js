@@ -144,7 +144,7 @@ const useProfileForm = () => {
     }
 
     try {
-      await put("/auth/profile", formData);
+      await put("auth/profile", formData);
 
       // Refresh user data
       refreshUser();

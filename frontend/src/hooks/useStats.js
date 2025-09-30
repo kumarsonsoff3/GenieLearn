@@ -25,8 +25,8 @@ const useStats = () => {
 
       // Fetch groups and messages in parallel
       const [groupsData, messagesData] = await Promise.all([
-        get("/api/groups"),
-        get("/api/messages/user/stats"),
+        get("groups"),
+        get("messages/user/stats"),
       ]);
 
       // Filter groups where user is a member

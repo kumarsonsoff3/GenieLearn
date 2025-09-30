@@ -70,7 +70,7 @@ const useGroupForm = () => {
       }
 
       try {
-        const result = await post("/api/groups", formData);
+        const result = await post("groups", formData);
 
         // Show success message
         setSuccess(true);
