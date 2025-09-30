@@ -9,7 +9,8 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
-import { Send, ArrowLeft, Users } from "lucide-react";
+import { Badge } from "../components/ui/badge";
+import { Send, ArrowLeft, Users, Crown } from "lucide-react";
 import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -286,18 +287,41 @@ const GroupChat = ({ group, onBack }) => {
                               .toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-600">
-                          {message.sender_name}
-                        </span>
+                        <div className="flex items-center space-x-1">
+                          <span className="text-xs text-gray-600">
+                            {message.sender_name}
+                          </span>
+                          {message.sender_id === group.creator_id && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs px-1 py-0 h-4 bg-amber-100 text-amber-700 border-amber-200 flex items-center"
+                              title="Group Creator"
+                            >
+                              <Crown className="h-3 w-3" />
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     )}
                     <div
-                      className={`px-4 py-2 rounded-lg shadow-sm ${
+                      className={`px-4 py-2 rounded-lg shadow-sm relative ${
                         message.sender_id === user?.id
                           ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-none"
                           : "bg-white border border-gray-200 text-gray-900 rounded-bl-none"
                       }`}
                     >
+                      {message.sender_id === user?.id &&
+                        message.sender_id === group.creator_id && (
+                          <div className="absolute -top-1 -right-1">
+                            <Badge
+                              variant="secondary"
+                              className="text-xs px-1 py-0 h-4 bg-amber-400 text-amber-900 border-amber-500 flex items-center"
+                              title="You are the group creator"
+                            >
+                              <Crown className="h-3 w-3" />
+                            </Badge>
+                          </div>
+                        )}
                       <p className="text-sm">{message.content}</p>
                       <p
                         className={`text-xs mt-1 ${
