@@ -1,8 +1,8 @@
-const jwt = require('jsonwebtoken');
-const url = require('url');
-const User = require('../models/User');
-const Group = require('../models/Group');
-const Message = require('../models/Message');
+const jwt = require("jsonwebtoken");
+const url = require("url");
+const User = require("../models/User");
+const Group = require("../models/Group");
+const Message = require("../models/Message");
 
 class ConnectionManager {
   constructor() {
@@ -12,12 +12,12 @@ class ConnectionManager {
   async handleConnection(ws, req) {
     try {
       const query = url.parse(req.url, true).query;
-      const pathParts = req.url.split('/');
-      const groupId = pathParts[pathParts.length - 1].split('?')[0];
+      const pathParts = req.url.split("/");
+      const groupId = pathParts[pathParts.length - 1].split("?")[0];
       const token = query.token;
 
       if (!token) {
-        ws.close(1008, 'Token required');
+        ws.close(1008, "Token required");
         return;
       }
 
@@ -26,59 +26,58 @@ class ConnectionManager {
       const user = await User.findOne({ email: decoded.sub });
 
       if (!user) {
-        ws.close(1008, 'User not found');
+        ws.close(1008, "User not found");
         return;
       }
 
       // Check if user is a member of the group
       const group = await Group.findOne({ id: groupId });
       if (!group || !group.members.includes(user.id)) {
-        ws.close(1008, 'Not a member of this group');
+        ws.close(1008, "Not a member of this group");
         return;
       }
 
       // Add connection
       await this.connect(ws, groupId, user.id, user.name);
 
-      ws.on('message', async (data) => {
+      ws.on("message", async data => {
         try {
           const messageData = JSON.parse(data.toString());
-          
-          if (messageData.type === 'message') {
+
+          if (messageData.type === "message") {
             // Create and save message
             const message = new Message({
               content: messageData.content,
               group_id: groupId,
               sender_id: user.id,
-              sender_name: user.name
+              sender_name: user.name,
             });
 
             await message.save();
 
             // Broadcast to all clients in the group
             const broadcastData = {
-              type: 'message',
+              type: "message",
               id: message.id,
               content: message.content,
               sender_id: message.sender_id,
               sender_name: message.sender_name,
-              timestamp: message.timestamp.toISOString()
+              timestamp: message.timestamp.toISOString(),
             };
 
             this.broadcastMessage(groupId, broadcastData);
           }
         } catch (error) {
-          console.error('Message handling error:', error);
+          console.error("Message handling error:", error);
         }
       });
 
-      ws.on('close', () => {
+      ws.on("close", () => {
         this.disconnect(groupId, user.id, user.name);
       });
-
     } catch (error) {
-      console.error('WebSocket connection error:', error);
-      ws.close(1008, 'Authentication failed');
+      console.error("WebSocket connection error:", error);
+      ws.close(1008, "Authentication failed");
     }
   }
 
@@ -90,7 +89,7 @@ class ConnectionManager {
     const connectionInfo = {
       websocket: ws,
       user_id: userId,
-      user_name: userName
+      user_name: userName,
     };
 
     this.activeConnections.get(groupId).push(connectionInfo);
@@ -102,16 +101,29 @@ class ConnectionManager {
   disconnect(groupId, userId, userName) {
     if (this.activeConnections.has(groupId)) {
       const connections = this.activeConnections.get(groupId);
-      const filteredConnections = connections.filter(conn => conn.user_id !== userId);
-      
-      if (filteredConnections.length === 0) {
-        this.activeConnections.delete(groupId);
-      } else {
-        this.activeConnections.set(groupId, filteredConnections);
-      }
+      const userConnections = connections.filter(
+        conn => conn.user_id === userId
+      );
 
-      // Notify other users that someone left
-      this.broadcastSystemMessage(groupId, `${userName} left the chat`, userId);
+      // Only proceed if user actually has connections
+      if (userConnections.length > 0) {
+        const filteredConnections = connections.filter(
+          conn => conn.user_id !== userId
+        );
+
+        if (filteredConnections.length === 0) {
+          this.activeConnections.delete(groupId);
+        } else {
+          this.activeConnections.set(groupId, filteredConnections);
+        }
+
+        // Only notify once when user leaves
+        this.broadcastSystemMessage(
+          groupId,
+          `${userName} left the chat`,
+          userId
+        );
+      }
     }
   }
 
@@ -122,7 +134,7 @@ class ConnectionManager {
         try {
           connection.websocket.send(JSON.stringify(messageData));
         } catch (error) {
-          console.error('Broadcast error:', error);
+          console.error("Broadcast error:", error);
         }
       });
     }
@@ -131,9 +143,9 @@ class ConnectionManager {
   broadcastSystemMessage(groupId, message, excludeUserId = null) {
     if (this.activeConnections.has(groupId)) {
       const systemMessage = {
-        type: 'system',
+        type: "system",
         content: message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       const connections = this.activeConnections.get(groupId);
@@ -144,7 +156,7 @@ class ConnectionManager {
         try {
           connection.websocket.send(JSON.stringify(systemMessage));
         } catch (error) {
-          console.error('System message broadcast error:', error);
+          console.error("System message broadcast error:", error);
         }
       });
     }
