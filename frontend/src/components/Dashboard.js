@@ -1,6 +1,8 @@
+'use client'
+
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { getCurrentUser } from "../store/authSlice";
 import {
   Card,
@@ -36,7 +38,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Dashboard = () => {
@@ -140,7 +142,7 @@ const Dashboard = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link to="/groups" className="block">
+          <Link href="/groups" className="block">
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg hover:shadow-xl hover:from-blue-100 hover:to-blue-200 transition-all duration-300 hover:scale-105 cursor-pointer">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -249,7 +251,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Link to="/groups">
+                  <Link href="/groups">
                     <Button className="w-full h-auto p-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-left justify-start transition-all duration-200 shadow-lg hover:shadow-xl">
                       <div className="flex items-center space-x-3">
                         <div className="p-2 bg-white/20 rounded-lg">
@@ -289,7 +291,7 @@ const Dashboard = () => {
                     buttonClassName="w-full h-auto p-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
                   />
 
-                  <Link to="/profile">
+                  <Link href="/profile">
                     <Button
                       variant="outline"
                       className="w-full h-auto p-4 border-2 border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-orange-50 hover:border-blue-300 text-left justify-start transition-all duration-200 shadow-sm hover:shadow-lg"
@@ -473,7 +475,7 @@ const Dashboard = () => {
                           <p className="text-sm text-gray-500">
                             No subjects added
                           </p>
-                          <Link to="/profile">
+                          <Link href="/profile">
                             <Button
                               variant="outline"
                               size="sm"
@@ -489,7 +491,7 @@ const Dashboard = () => {
 
                   <Separator />
 
-                  <Link to="/profile" className="block">
+                  <Link href="/profile" className="block">
                     <Button variant="outline" className="w-full">
                       <Settings className="h-4 w-4 mr-2" />
                       Edit Profile

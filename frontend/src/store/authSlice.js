@@ -1,8 +1,28 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Helper to safely access localStorage
+const getStoredToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token') || null;
+  }
+  return null;
+};
+
+const setStoredToken = (token) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('token', token);
+  }
+};
+
+const removeStoredToken = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
+  }
+};
 
 // Async thunks
 export const registerUser = createAsyncThunk(
@@ -10,7 +30,7 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API}/auth/register`, userData);
-      localStorage.setItem('token', response.data.access_token);
+      setStoredToken(response.data.access_token);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data.detail);
@@ -23,7 +43,7 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API}/auth/login`, userData);
-      localStorage.setItem('token', response.data.access_token);
+      setStoredToken(response.data.access_token);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data.detail);
@@ -35,7 +55,7 @@ export const getCurrentUser = createAsyncThunk(
   'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getStoredToken();
       if (!token) {
         return rejectWithValue('No token found');
       }
@@ -45,7 +65,7 @@ export const getCurrentUser = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      localStorage.removeItem('token');
+      removeStoredToken();
       return rejectWithValue(error.response.data.detail);
     }
   }
@@ -54,15 +74,15 @@ export const getCurrentUser = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    token: localStorage.getItem('token') || null,
+    token: getStoredToken(),
     user: null,
     loading: false,
     error: null,
-    isAuthenticated: !!localStorage.getItem('token'),
+    isAuthenticated: !!getStoredToken(),
   },
   reducers: {
     logout: (state) => {
-      localStorage.removeItem('token');
+      removeStoredToken();
       state.token = null;
       state.user = null;
       state.isAuthenticated = false;

@@ -1,5 +1,7 @@
+'use client'
+
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import Layout from "../components/Layout";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { CheckCircle } from "lucide-react";
@@ -15,7 +17,7 @@ import QuickActions from "./profile/QuickActions";
 import { CreateGroupModal } from "./shared";
 
 const Profile = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   // Custom hooks
   const { user, isAuthenticated } = useAuth();

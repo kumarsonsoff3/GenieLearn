@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { Button } from "../components/ui/button";
@@ -13,7 +15,7 @@ import { Badge } from "../components/ui/badge";
 import { Send, ArrowLeft, Users, Crown } from "lucide-react";
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const WS_URL = `${BACKEND_URL.replace("http://", "ws://").replace(
   "https://",
   "wss://"

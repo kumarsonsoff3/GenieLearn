@@ -1,6 +1,9 @@
+'use client'
+
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { logout } from "../store/authSlice";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
@@ -16,13 +19,13 @@ import { Users, Settings, LogOut, Home, User } from "lucide-react";
 
 const Layout = ({ children }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const { user } = useSelector(state => state.auth);
 
   const handleLogout = () => {
     dispatch(logout());
-    navigate("/login");
+    router.push("/login");
   };
 
   const navItems = [
@@ -54,9 +57,9 @@ const Layout = ({ children }) => {
                   return (
                     <Link
                       key={item.path}
-                      to={item.path}
+                      href={item.path}
                       className={`flex items-center space-x-2 transition-colors ${
-                        location.pathname === item.path
+                        pathname === item.path
                           ? "text-blue-600 font-medium"
                           : "text-gray-600 hover:text-blue-600"
                       }`}
@@ -111,7 +114,7 @@ const Layout = ({ children }) => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link
-                      to="/profile"
+                      href="/profile"
                       className="flex items-center space-x-2 cursor-pointer touch-manipulation py-3"
                     >
                       <User className="h-4 w-4" />
@@ -124,7 +127,7 @@ const Layout = ({ children }) => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link
-                        to="/dashboard"
+                        href="/dashboard"
                         className="flex items-center space-x-2 cursor-pointer touch-manipulation py-3"
                       >
                         <Home className="h-4 w-4" />
@@ -133,7 +136,7 @@ const Layout = ({ children }) => {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link
-                        to="/groups"
+                        href="/groups"
                         className="flex items-center space-x-2 cursor-pointer touch-manipulation py-3"
                       >
                         <Users className="h-4 w-4" />

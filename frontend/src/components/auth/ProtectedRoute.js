@@ -1,11 +1,14 @@
+'use client'
+
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Navigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '../../store/authSlice';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { isAuthenticated, loading, token, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
@@ -14,6 +17,13 @@ const ProtectedRoute = ({ children }) => {
       dispatch(getCurrentUser());
     }
   }, [token, user, loading, dispatch]);
+
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!loading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, loading, router]);
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -24,9 +34,9 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // Redirect to login if not authenticated
+  // If not authenticated, don't render children (will redirect)
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return null;
   }
 
   return children;

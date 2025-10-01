@@ -1,6 +1,9 @@
+'use client'
+
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { loginUser, clearError } from "../../store/authSlice";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -17,7 +20,7 @@ import { Loader2 } from "lucide-react";
 
 const Login = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const router = useRouter();
   const { loading, error, isAuthenticated } = useSelector(state => state.auth);
 
   const [formData, setFormData] = useState({
@@ -27,9 +30,9 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard");
+      router.push("/dashboard");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     return () => {
@@ -132,9 +135,9 @@ const Login = () => {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link
-                  to="/register"
+                  href="/register"
                   className="font-medium bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent hover:from-blue-700 hover:to-orange-600 transition-all duration-200"
                 >
                   Sign up here
