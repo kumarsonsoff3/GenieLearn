@@ -1,11 +1,14 @@
-# Next.js Migration Summary
+# Next.js Migration Summary (JavaScript)
 
 ## Quick Reference
 
+> **Important**: This is a JavaScript-based Next.js application. All files use `.js` extension, not TypeScript.
+
 ### What Changed?
-- **Framework**: Create React App → Next.js 14
+- **Framework**: Create React App → Next.js 14 (JavaScript)
 - **Routing**: React Router DOM → Next.js App Router
 - **Build Tool**: react-scripts → next
+- **Language**: JavaScript (no TypeScript)
 
 ### Commands Updated
 ```bash

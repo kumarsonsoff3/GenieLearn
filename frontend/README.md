@@ -1,16 +1,18 @@
-# GenieLearn Frontend - Next.js
+# GenieLearn Frontend - Next.js (JavaScript)
 
-This is the frontend application for GenieLearn, built with Next.js 14 and the App Router.
+This is the frontend application for GenieLearn, built with **Next.js 14 and the App Router using JavaScript**.
 
 ## 🚀 Tech Stack
 
-- **Next.js 14** - React framework with App Router
+- **Next.js 14** - React framework with App Router (JavaScript)
 - **React 18** - UI library
 - **Redux Toolkit** - State management
 - **Tailwind CSS** - Styling
 - **Radix UI** - Component primitives
 - **Axios** - HTTP client
 - **Lucide React** - Icons
+
+> **Note**: This application uses JavaScript (`.js` files) throughout, not TypeScript.
 
 ## 📁 Project Structure
 
@@ -106,6 +108,7 @@ Runs ESLint to check for code quality issues.
 - **Static Site Generation (SSG)** - Pre-rendered pages
 - **File-based Routing** - Automatic routing from file structure
 - **API Routes** - Built-in API endpoints (if needed)
+- **JavaScript-based** - Pure JavaScript implementation without TypeScript
 - **Image Optimization** - Automatic image optimization
 - **Code Splitting** - Automatic code splitting for better performance
 - **Hot Module Replacement** - Fast refresh during development

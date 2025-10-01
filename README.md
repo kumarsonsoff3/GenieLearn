@@ -6,12 +6,14 @@ A real-time learning platform that enables students to form study groups, partic
 
 ### Frontend
 
-- **Next.js 14** with App Router
+- **Next.js 14** with App Router (JavaScript)
 - **React 18** with modern hooks
 - **Redux Toolkit** for state management
 - **Tailwind CSS** + **Radix UI** for styling
 - **Axios** for API calls
 - **WebSocket** for real-time messaging
+
+> **Note**: Frontend uses JavaScript, not TypeScript
 
 ### Backend
 

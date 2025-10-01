@@ -1,12 +1,14 @@
-# Next.js Migration Guide
+# Next.js Migration Guide (JavaScript)
 
-This document outlines the migration from Create React App (CRA) to Next.js 14 with App Router.
+This document outlines the migration from Create React App (CRA) to **Next.js 14 with App Router using JavaScript**.
+
+> **Important**: This migration uses pure JavaScript (`.js` files), not TypeScript.
 
 ## What Changed
 
 ### 1. Framework & Routing
 - **Before**: Create React App with React Router DOM
-- **After**: Next.js 14 with App Router
+- **After**: Next.js 14 with App Router (JavaScript)
 
 ### 2. Project Structure
 ```
