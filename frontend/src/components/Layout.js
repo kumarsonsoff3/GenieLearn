@@ -4,7 +4,7 @@ import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { logout } from "../store/authSlice";
+import { logoutUser } from "../store/authSlice";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import {
@@ -23,8 +23,8 @@ const Layout = ({ children }) => {
   const pathname = usePathname();
   const { user } = useSelector(state => state.auth);
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
     router.push("/login");
   };
 

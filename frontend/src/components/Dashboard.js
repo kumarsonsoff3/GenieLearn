@@ -36,14 +36,11 @@ import {
   Brain,
   UserPlus,
 } from "lucide-react";
-import axios from "axios";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import api from "../utils/axios";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { user, loading, token } = useSelector(state => state.auth);
+  const { user, loading } = useSelector(state => state.auth);
   const [userStats, setUserStats] = useState({
     groupsJoined: 0,
     messagesSent: 0,
@@ -58,25 +55,20 @@ const Dashboard = () => {
   }, [dispatch, user]);
 
   useEffect(() => {
-    if (user && token) {
+    if (user) {
       fetchUserStats();
     }
-  }, [user, token]);
+  }, [user]);
 
   const fetchUserStats = async () => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-
-      // Fetch user's groups and message stats
-      const [myGroupsResponse, messageStatsResponse] = await Promise.all([
-        axios.get(`${API}/groups/my-groups`, { headers }),
-        axios.get(`${API}/users/me/messages/stats`, { headers }),
-      ]);
+      // Fetch user's groups from new API
+      const myGroupsResponse = await api.get('/groups/my-groups');
 
       setUserStats(prevStats => ({
         ...prevStats,
         groupsJoined: myGroupsResponse.data.length,
-        messagesSent: messageStatsResponse.data.messagesSent,
+        messagesSent: 0, // Will be calculated from messages
       }));
     } catch (error) {
       console.error("Error fetching user stats:", error);

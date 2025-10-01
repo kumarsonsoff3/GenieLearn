@@ -1,27 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+const API = '/api';
 
-// Helper to safely access localStorage
-const getStoredToken = () => {
+// Helper to check if user is authenticated (has session cookie)
+const checkAuth = () => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('token') || null;
+    // Check if session cookie exists
+    return document.cookie.includes('session=');
   }
-  return null;
-};
-
-const setStoredToken = (token) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('token', token);
-  }
-};
-
-const removeStoredToken = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
-  }
+  return false;
 };
 
 // Async thunks
@@ -30,10 +18,9 @@ export const registerUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API}/auth/register`, userData);
-      setStoredToken(response.data.access_token);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.detail);
+      return rejectWithValue(error.response?.data?.detail || 'Registration failed');
     }
   }
 );
@@ -43,10 +30,9 @@ export const loginUser = createAsyncThunk(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API}/auth/login`, userData);
-      setStoredToken(response.data.access_token);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data.detail);
+      return rejectWithValue(error.response?.data?.detail || 'Login failed');
     }
   }
 );
@@ -55,18 +41,22 @@ export const getCurrentUser = createAsyncThunk(
   'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
     try {
-      const token = getStoredToken();
-      if (!token) {
-        return rejectWithValue('No token found');
-      }
-      
-      const response = await axios.get(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(`${API}/auth/me`);
       return response.data;
     } catch (error) {
-      removeStoredToken();
-      return rejectWithValue(error.response.data.detail);
+      return rejectWithValue(error.response?.data?.detail || 'Failed to get user');
+    }
+  }
+);
+
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await axios.post(`${API}/auth/logout`);
+      return {};
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.detail || 'Logout failed');
     }
   }
 );
@@ -74,16 +64,13 @@ export const getCurrentUser = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    token: getStoredToken(),
     user: null,
     loading: false,
     error: null,
-    isAuthenticated: !!getStoredToken(),
+    isAuthenticated: checkAuth(),
   },
   reducers: {
     logout: (state) => {
-      removeStoredToken();
-      state.token = null;
       state.user = null;
       state.isAuthenticated = false;
       state.error = null;
@@ -101,8 +88,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.token = action.payload.access_token;
-        state.isAuthenticated = true;
+        state.isAuthenticated = false; // User needs to login after registration
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
@@ -116,7 +102,6 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.token = action.payload.access_token;
         state.isAuthenticated = true;
         state.error = null;
       })
@@ -135,9 +120,14 @@ const authSlice = createSlice({
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.loading = false;
-        state.token = null;
         state.isAuthenticated = false;
         state.error = action.payload;
+      })
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = null;
       });
   },
 });
