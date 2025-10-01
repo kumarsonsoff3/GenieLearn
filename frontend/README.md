@@ -1,70 +1,194 @@
-# Getting Started with Create React App
+# GenieLearn Frontend - Next.js
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is the frontend application for GenieLearn, built with Next.js 14 and the App Router.
 
-## Available Scripts
+## 🚀 Tech Stack
 
-In the project directory, you can run:
+- **Next.js 14** - React framework with App Router
+- **React 18** - UI library
+- **Redux Toolkit** - State management
+- **Tailwind CSS** - Styling
+- **Radix UI** - Component primitives
+- **Axios** - HTTP client
+- **Lucide React** - Icons
 
-### `npm start`
+## 📁 Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+frontend/
+├── app/                    # Next.js App Router
+│   ├── layout.js          # Root layout
+│   ├── page.js            # Home page
+│   ├── login/             # Login page
+│   ├── register/          # Register page
+│   ├── dashboard/         # Dashboard page
+│   ├── groups/            # Groups page
+│   └── profile/           # Profile page
+├── src/
+│   ├── components/        # React components
+│   │   ├── auth/         # Authentication components
+│   │   ├── profile/      # Profile components
+│   │   ├── shared/       # Shared components
+│   │   └── ui/           # UI components (Radix UI)
+│   ├── store/            # Redux store
+│   │   ├── authSlice.js  # Auth state management
+│   │   └── index.js      # Store configuration
+│   ├── utils/            # Utility functions
+│   ├── hooks/            # Custom React hooks
+│   └── lib/              # Library configurations
+├── public/               # Static assets
+└── next.config.js        # Next.js configuration
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🛠️ Setup
 
-### `npm test`
+### Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js 16+ 
+- npm or yarn
 
-### `npm run build`
+### Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+# Install dependencies
+npm install
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Create environment file
+cp .env.example .env.local
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Environment Variables
 
-### `npm run eject`
+Create a `.env.local` file with:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```env
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8001
+NEXT_PUBLIC_WS_URL=ws://localhost:8001
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 📜 Available Scripts
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Development
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```bash
+npm run dev
+```
 
-## Learn More
+Runs the app in development mode at [http://localhost:3000](http://localhost:3000).
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Production Build
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+npm run build
+```
 
-### Code Splitting
+Creates an optimized production build in the `.next` folder.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Start Production Server
 
-### Analyzing the Bundle Size
+```bash
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Runs the production build. Must run `npm run build` first.
 
-### Making a Progressive Web App
+### Linting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+npm run lint
+```
 
-### Advanced Configuration
+Runs ESLint to check for code quality issues.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 🎨 Features
 
-### Deployment
+- **Server-Side Rendering (SSR)** - Fast initial page loads
+- **Static Site Generation (SSG)** - Pre-rendered pages
+- **File-based Routing** - Automatic routing from file structure
+- **API Routes** - Built-in API endpoints (if needed)
+- **Image Optimization** - Automatic image optimization
+- **Code Splitting** - Automatic code splitting for better performance
+- **Hot Module Replacement** - Fast refresh during development
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🔐 Authentication
 
-### `npm run build` fails to minify
+The app uses JWT-based authentication with Redux for state management:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Login/Register pages for user authentication
+- Protected routes using `ProtectedRoute` component
+- Token stored in localStorage (with SSR safety checks)
+- Automatic token refresh and validation
+
+## 🗂️ State Management
+
+Redux Toolkit is used for global state management:
+
+- **Auth State**: User authentication, login, logout
+- **Store Provider**: Client-side Redux provider wrapper
+- **Persisted State**: Token persistence with localStorage
+
+## 🎨 Styling
+
+- **Tailwind CSS** - Utility-first CSS framework
+- **Radix UI** - Unstyled, accessible components
+- **Custom Components** - Pre-styled UI components in `src/components/ui/`
+
+## 📱 Pages
+
+- `/` - Home (redirects to dashboard)
+- `/login` - User login
+- `/register` - User registration
+- `/dashboard` - User dashboard (protected)
+- `/groups` - Study groups (protected)
+- `/profile` - User profile (protected)
+
+## 🔄 Migration from CRA
+
+This project was migrated from Create React App to Next.js. See [MIGRATION.md](./MIGRATION.md) for details.
+
+### Key Changes
+
+- React Router → Next.js App Router
+- `REACT_APP_*` → `NEXT_PUBLIC_*` environment variables
+- Added `'use client'` directive to client components
+- SSR-safe localStorage access
+- Updated import paths and navigation
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+### Other Platforms
+
+1. Build the app: `npm run build`
+2. Start the server: `npm start`
+3. Or deploy the `.next` folder to your hosting service
+
+## 📚 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Next.js App Router](https://nextjs.org/docs/app)
+- [React Documentation](https://react.dev)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [Redux Toolkit](https://redux-toolkit.js.org)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
