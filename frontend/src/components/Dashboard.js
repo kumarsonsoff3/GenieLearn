@@ -68,7 +68,7 @@ const Dashboard = () => {
       // Fetch user's groups and message stats
       const [myGroupsResponse, messageStatsResponse] = await Promise.all([
         axios.get(`${API}/groups/my-groups`, { headers }),
-        axios.get(`${API}/messages/user/stats`, { headers }),
+        axios.get(`${API}/users/me/messages/stats`, { headers }),
       ]);
 
       setUserStats(prevStats => ({

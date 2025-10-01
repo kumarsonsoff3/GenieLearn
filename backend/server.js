@@ -10,6 +10,7 @@ require("dotenv").config();
 const authRoutes = require("./routes/auth");
 const groupRoutes = require("./routes/groups");
 const messageRoutes = require("./routes/messages");
+const userRoutes = require("./routes/users");
 const ConnectionManager = require("./utils/connectionManager");
 
 const app = express();
@@ -71,6 +72,7 @@ app.get("/api/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/users", userRoutes);
 
 // WebSocket setup
 const wss = new WebSocket.Server({ server });
