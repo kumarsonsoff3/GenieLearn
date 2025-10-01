@@ -4,40 +4,33 @@ A real-time learning platform that enables students to form study groups, partic
 
 ## 🚀 Technology Stack
 
-### Frontend
-
 - **Next.js 14** with App Router (JavaScript)
 - **React 18** with modern hooks
 - **Redux Toolkit** for state management
+- **Appwrite** for backend services:
+  - Authentication (Users & Sessions)
+  - Database (Groups, Messages, User Profiles)
+  - Realtime (Live chat functionality)
+  - Storage (File uploads)
 - **Tailwind CSS** + **Radix UI** for styling
-- **Axios** for API calls
-- **WebSocket** for real-time messaging
 
-> **Note**: Frontend uses JavaScript, not TypeScript
-
-### Backend
-
-- **Node.js** + **Express.js**
-- **MongoDB** with **Mongoose** ODM
-- **JWT** authentication with **bcryptjs**
-- **WebSocket** for real-time features
-- **Helmet** + **CORS** for security
+> **Note**: This is a **full-stack Next.js application** using JavaScript (not TypeScript)
 
 ## 📋 Features
 
-- **User Authentication**: Secure registration and login
+- **User Authentication**: Secure registration and login with Appwrite
 - **Study Groups**: Create and join study groups by interest
-- **Real-time Chat**: Live messaging within groups
+- **Real-time Chat**: Live messaging with Appwrite Realtime
 - **Group Management**: Join/leave groups, view member counts
 - **Responsive Design**: Works on desktop and mobile
-- **Real-time Notifications**: User join/leave notifications
+- **Session-based Auth**: Cookie-based authentication
 
 ## 🛠️ Setup Instructions
 
 ### Prerequisites
 
 - Node.js (v16 or higher)
-- MongoDB (local or Atlas)
+- Appwrite account (cloud or self-hosted)
 - Git
 
 ### Quick Start
@@ -46,23 +39,16 @@ A real-time learning platform that enables students to form study groups, partic
 
    ```bash
    git clone <repository-url>
-   cd app
+   cd GenieLearn
    ```
 
-2. **Backend Setup**:
+2. **Setup Appwrite**:
 
-   ```bash
-   cd backend
-   npm install
-
-   # Create .env file with:
-   # MONGO_URL=mongodb://localhost:27017/genielearn
-   # SECRET_KEY=your-jwt-secret-key
-   # PORT=8001
-   # CORS_ORIGINS=http://localhost:3000
-
-   npm start
-   ```
+   Follow the detailed guide in [frontend/APPWRITE_SETUP.md](frontend/APPWRITE_SETUP.md) to:
+   - Create Appwrite project
+   - Create database and collections
+   - Generate API key
+   - Configure permissions
 
 3. **Frontend Setup**:
 
@@ -71,22 +57,26 @@ A real-time learning platform that enables students to form study groups, partic
    npm install
    
    # Create .env.local file with:
-   # NEXT_PUBLIC_BACKEND_URL=http://localhost:8001
-   # NEXT_PUBLIC_WS_URL=ws://localhost:8001
+   cp .env.example .env.local
+   # Edit .env.local with your Appwrite credentials
    
    npm run dev
    ```
 
 4. **Access the application**:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8001
+   - Application: http://localhost:3000
+   - Next.js API: http://localhost:3000/api
 
 ## 📁 Project Structure
 
 ```
-app/
-├── frontend/               # Next.js 14 frontend application
-│   ├── app/               # Next.js App Router pages
+GenieLearn/
+├── frontend/               # Full-stack Next.js application
+│   ├── app/               # Next.js App Router
+│   │   ├── api/          # Next.js API Routes (backend)
+│   │   │   ├── auth/     # Authentication endpoints
+│   │   │   ├── groups/   # Groups endpoints
+│   │   │   └── messages/ # Messages endpoints
 │   │   ├── layout.js     # Root layout
 │   │   ├── page.js       # Home page
 │   │   ├── login/        # Login page
@@ -97,69 +87,73 @@ app/
 │   ├── src/
 │   │   ├── components/    # React components
 │   │   ├── store/        # Redux store and slices
-│   │   ├── utils/        # Utility functions (axios config)
-│   │   └── hooks/        # Custom React hooks
+│   │   ├── utils/        # Utility functions
+│   │   ├── hooks/        # Custom React hooks
+│   │   └── lib/          # Appwrite configuration
 │   ├── public/           # Static assets
+│   ├── APPWRITE_SETUP.md # Appwrite setup guide
 │   ├── next.config.js    # Next.js configuration
 │   └── package.json
 │
-├── backend/               # Node.js backend application
-│   ├── models/           # MongoDB models
-│   ├── routes/           # API routes
-│   ├── middleware/       # Express middleware
-│   ├── utils/           # Utility functions
-│   ├── server.js        # Main server file
-│   └── package.json
-│
+└── README.md
+```
+│   │   └── hooks/        # Custom React hooks
+│   ├── public/           # Static assets
+│   ├── next.config.js    # Next.js configuration
 └── README.md
 ```
 
 ## 🔗 API Endpoints
 
+All API endpoints are Next.js API routes located in `/app/api/*`:
+
 ### Authentication
 
 - `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
+- `POST /api/auth/login` - User login (creates session cookie)
 - `GET /api/auth/me` - Get current user
+- `POST /api/auth/logout` - Logout user
 
 ### Groups
 
-- `GET /api/groups` - Get all public groups
+- `GET /api/groups/list` - Get all public groups
 - `GET /api/groups/my-groups` - Get user's groups
-- `POST /api/groups` - Create a new group
-- `POST /api/groups/:id/join` - Join a group
-- `POST /api/groups/:id/leave` - Leave a group
+- `POST /api/groups/create` - Create a new group
+- `POST /api/groups/[groupId]/join` - Join a group
+- `POST /api/groups/[groupId]/leave` - Leave a group
+- `GET /api/groups/[groupId]/messages` - Get group messages
+- `GET /api/groups/stats` - Get platform statistics
 
 ### Messages
 
-- `GET /api/groups/:id/messages` - Get group messages
-- `WS /ws/:groupId?token=JWT` - Real-time messaging
+- `POST /api/messages/create` - Send a message
+- Real-time updates via Appwrite Realtime subscriptions
 
 ## 🎯 Recent Updates
 
-- ✅ **Next.js Migration**: Successfully migrated from Create React App to Next.js 14
-- ✅ **App Router**: Implemented Next.js App Router for better performance
-- ✅ **SSR Ready**: Server-side rendering compatible with proper localStorage handling
-- ✅ **Complete Migration**: Migrated from Python/FastAPI to Node.js/Express
-- ✅ **Frontend Optimized**: Resolved all dependency conflicts and build issues
-- ✅ **Real-time Messaging**: WebSocket implementation for live chat
-- ✅ **Security**: JWT authentication, rate limiting, CORS protection
-- ✅ **Modern Stack**: Latest Next.js 14, React 18, Express, MongoDB with Mongoose
+- ✅ **Full Next.js Migration**: Migrated entire application to Next.js 14
+- ✅ **Appwrite Integration**: Replaced Express/MongoDB with Appwrite
+- ✅ **Backend Removal**: Consolidated to single Next.js application
+- ✅ **API Routes**: All backend logic now in Next.js API routes
+- ✅ **Appwrite Realtime**: Real-time chat with Appwrite subscriptions
+- ✅ **Session Auth**: Cookie-based authentication instead of JWT tokens
+- ✅ **JavaScript Only**: Pure JavaScript implementation (no TypeScript)
 
 ## 🚦 Development Status
 
-- ✅ Frontend: Running successfully on Next.js port 3000
-- ✅ Backend: Complete Node.js implementation on port 8001
-- ✅ API: All endpoints implemented and tested
-- ✅ Real-time: WebSocket messaging system ready
-- ✅ Production Build: Optimized and ready for deployment
-- 🔄 Database: Requires MongoDB connection for full functionality
+- ✅ Full-stack Next.js application running on port 3000
+- ✅ API routes implemented and functional
+- ✅ Real-time messaging with Appwrite Realtime
+- ✅ Production build optimized and tested
+- ✅ All features migrated from Express backend
+- 🔄 Requires Appwrite project setup (see APPWRITE_SETUP.md)
 
 ## 📚 Additional Documentation
 
-- See [MIGRATION.md](frontend/MIGRATION.md) for detailed Next.js migration guide
-- Frontend now uses Next.js 14 with App Router
-- Environment variables now use `NEXT_PUBLIC_` prefix
+- [APPWRITE_SETUP.md](frontend/APPWRITE_SETUP.md) - Complete Appwrite setup guide
+- [MIGRATION.md](frontend/MIGRATION.md) - Next.js migration details
+- [MIGRATION_SUMMARY.md](frontend/MIGRATION_SUMMARY.md) - Quick reference
+- [frontend/README.md](frontend/README.md) - Frontend-specific documentation
 
 ## 📝 Contributing
 
