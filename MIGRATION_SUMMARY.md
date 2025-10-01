@@ -123,7 +123,7 @@ frontend/
 
 1. **Install Dependencies**:
    ```bash
-   cd frontend
+   # Project is now in root directory
    npm install
    ```
 

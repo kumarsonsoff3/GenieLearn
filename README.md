@@ -1,161 +1,215 @@
-# GenieLearn
+# GenieLearn - Full-Stack Next.js Application (JavaScript)
 
-A real-time learning platform that enables students to form study groups, participate in discussions, and collaborate on learning materials.
+A real-time learning platform built with **Next.js 14 with App Router and Appwrite backend**, using pure JavaScript.
 
-## 🚀 Technology Stack
+## 🚀 Tech Stack
 
-- **Next.js 14** with App Router (JavaScript)
-- **React 18** with modern hooks
-- **Redux Toolkit** for state management
-- **Appwrite** for backend services:
-  - Authentication (Users & Sessions)
-  - Database (Groups, Messages, User Profiles)
-  - Realtime (Live chat functionality)
-  - Storage (File uploads)
-- **Tailwind CSS** + **Radix UI** for styling
+- **Next.js 14** - Full-stack React framework with App Router (JavaScript)
+- **React 18** - UI library
+- **Redux Toolkit** - State management
+- **Appwrite** - Backend services (Auth, Database, Realtime, Storage)
+- **Tailwind CSS** - Styling
+- **Radix UI** - Component primitives
+- **Lucide React** - Icons
 
-> **Note**: This is a **full-stack Next.js application** using JavaScript (not TypeScript)
-
-## 📋 Features
-
-- **User Authentication**: Secure registration and login with Appwrite
-- **Study Groups**: Create and join study groups by interest
-- **Real-time Chat**: Live messaging with Appwrite Realtime
-- **Group Management**: Join/leave groups, view member counts
-- **Responsive Design**: Works on desktop and mobile
-- **Session-based Auth**: Cookie-based authentication
-
-## 🛠️ Setup Instructions
-
-### Prerequisites
-
-- Node.js (v16 or higher)
-- Appwrite account (cloud or self-hosted)
-- Git
-
-### Quick Start
-
-1. **Clone the repository**:
-
-   ```bash
-   git clone <repository-url>
-   cd GenieLearn
-   ```
-
-2. **Setup Appwrite**:
-
-   Follow the detailed guide in [frontend/APPWRITE_SETUP.md](frontend/APPWRITE_SETUP.md) to:
-   - Create Appwrite project
-   - Create database and collections
-   - Generate API key
-   - Configure permissions
-
-3. **Frontend Setup**:
-
-   ```bash
-   cd frontend
-   npm install
-   
-   # Create .env.local file with:
-   cp .env.example .env.local
-   # Edit .env.local with your Appwrite credentials
-   
-   npm run dev
-   ```
-
-4. **Access the application**:
-   - Application: http://localhost:3000
-   - Next.js API: http://localhost:3000/api
+> **Note**: This is a full-stack application using JavaScript (`.js` files) throughout, not TypeScript.
 
 ## 📁 Project Structure
 
 ```
 GenieLearn/
-├── frontend/               # Full-stack Next.js application
-│   ├── app/               # Next.js App Router
-│   │   ├── api/          # Next.js API Routes (backend)
-│   │   │   ├── auth/     # Authentication endpoints
-│   │   │   ├── groups/   # Groups endpoints
-│   │   │   └── messages/ # Messages endpoints
-│   │   ├── layout.js     # Root layout
-│   │   ├── page.js       # Home page
-│   │   ├── login/        # Login page
-│   │   ├── register/     # Register page
-│   │   ├── dashboard/    # Dashboard page
-│   │   ├── groups/       # Groups page
-│   │   └── profile/      # Profile page
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── store/        # Redux store and slices
-│   │   ├── utils/        # Utility functions
-│   │   ├── hooks/        # Custom React hooks
-│   │   └── lib/          # Appwrite configuration
-│   ├── public/           # Static assets
-│   ├── APPWRITE_SETUP.md # Appwrite setup guide
-│   ├── next.config.js    # Next.js configuration
-│   └── package.json
-│
-└── README.md
+├── app/                    # Next.js App Router
+│   ├── api/               # Backend API Routes
+│   │   ├── auth/         # Authentication endpoints
+│   │   ├── groups/       # Groups endpoints
+│   │   └── messages/     # Messages endpoints
+│   ├── layout.js          # Root layout
+│   ├── page.js            # Home page
+│   ├── login/             # Login page
+│   ├── register/          # Register page
+│   ├── dashboard/         # Dashboard page
+│   ├── groups/            # Groups page
+│   └── profile/           # Profile page
+├── src/
+│   ├── components/        # React components
+│   │   ├── auth/         # Authentication components
+│   │   ├── profile/      # Profile components
+│   │   ├── shared/       # Shared components
+│   │   └── ui/           # UI components (Radix UI)
+│   ├── store/            # Redux store
+│   │   ├── authSlice.js  # Auth state management
+│   │   └── index.js      # Store configuration
+│   ├── utils/            # Utility functions
+│   ├── hooks/            # Custom React hooks
+│   └── lib/              # Appwrite configuration
+│       ├── appwrite.js         # Client SDK
+│       ├── appwrite-server.js  # Server SDK
+│       └── appwrite-config.js  # Constants
+├── public/               # Static assets
+├── APPWRITE_SETUP.md     # Appwrite setup guide
+└── next.config.js        # Next.js configuration
 ```
-│   │   └── hooks/        # Custom React hooks
-│   ├── public/           # Static assets
-│   ├── next.config.js    # Next.js configuration
-└── README.md
+
+## 🛠️ Setup
+
+### Prerequisites
+
+- Node.js 16+ 
+- npm or yarn
+- Appwrite account (cloud or self-hosted)
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env.local
 ```
 
-## 🔗 API Endpoints
+### Appwrite Setup
 
-All API endpoints are Next.js API routes located in `/app/api/*`:
+Follow the detailed guide in [APPWRITE_SETUP.md](APPWRITE_SETUP.md) to:
+- Create Appwrite project
+- Create database and collections
+- Generate API key
+- Configure permissions
 
-### Authentication
+### Environment Variables
 
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login (creates session cookie)
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/logout` - Logout user
+Create a `.env.local` file with your Appwrite credentials:
 
-### Groups
+```env
+# Appwrite Configuration
+NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
+APPWRITE_API_KEY=your_api_key
 
-- `GET /api/groups/list` - Get all public groups
-- `GET /api/groups/my-groups` - Get user's groups
-- `POST /api/groups/create` - Create a new group
-- `POST /api/groups/[groupId]/join` - Join a group
-- `POST /api/groups/[groupId]/leave` - Leave a group
-- `GET /api/groups/[groupId]/messages` - Get group messages
-- `GET /api/groups/stats` - Get platform statistics
+# Appwrite Database Configuration
+NEXT_PUBLIC_APPWRITE_DATABASE_ID=genielearn
+NEXT_PUBLIC_APPWRITE_COLLECTION_GROUPS=groups
+NEXT_PUBLIC_APPWRITE_COLLECTION_MESSAGES=messages
+NEXT_PUBLIC_APPWRITE_COLLECTION_USER_PROFILES=user_profiles
+NEXT_PUBLIC_APPWRITE_BUCKET_ID=files
+```
 
-### Messages
+## 📜 Available Scripts
 
-- `POST /api/messages/create` - Send a message
-- Real-time updates via Appwrite Realtime subscriptions
+### Development
 
-## 🎯 Recent Updates
+```bash
+npm run dev
+```
 
-- ✅ **Full Next.js Migration**: Migrated entire application to Next.js 14
-- ✅ **Appwrite Integration**: Replaced Express/MongoDB with Appwrite
-- ✅ **Backend Removal**: Consolidated to single Next.js application
-- ✅ **API Routes**: All backend logic now in Next.js API routes
-- ✅ **Appwrite Realtime**: Real-time chat with Appwrite subscriptions
-- ✅ **Session Auth**: Cookie-based authentication instead of JWT tokens
-- ✅ **JavaScript Only**: Pure JavaScript implementation (no TypeScript)
+Runs the app in development mode at [http://localhost:3000](http://localhost:3000).
 
-## 🚦 Development Status
+### Production Build
 
-- ✅ Full-stack Next.js application running on port 3000
-- ✅ API routes implemented and functional
-- ✅ Real-time messaging with Appwrite Realtime
-- ✅ Production build optimized and tested
-- ✅ All features migrated from Express backend
-- 🔄 Requires Appwrite project setup (see APPWRITE_SETUP.md)
+```bash
+npm run build
+```
 
-## 📚 Additional Documentation
+Creates an optimized production build in the `.next` folder.
 
-- [APPWRITE_SETUP.md](frontend/APPWRITE_SETUP.md) - Complete Appwrite setup guide
-- [MIGRATION.md](frontend/MIGRATION.md) - Next.js migration details
-- [MIGRATION_SUMMARY.md](frontend/MIGRATION_SUMMARY.md) - Quick reference
-- [frontend/README.md](frontend/README.md) - Frontend-specific documentation
+### Start Production Server
 
-## 📝 Contributing
+```bash
+npm start
+```
+
+Runs the production build. Must run `npm run build` first.
+
+### Linting
+
+```bash
+npm run lint
+```
+
+Runs ESLint to check for code quality issues.
+
+## 🎨 Features
+
+- **Server-Side Rendering (SSR)** - Fast initial page loads
+- **Static Site Generation (SSG)** - Pre-rendered pages
+- **File-based Routing** - Automatic routing from file structure
+- **API Routes** - Built-in API endpoints (if needed)
+- **JavaScript-based** - Pure JavaScript implementation without TypeScript
+- **Image Optimization** - Automatic image optimization
+- **Code Splitting** - Automatic code splitting for better performance
+- **Hot Module Replacement** - Fast refresh during development
+
+## 🔐 Authentication
+
+The app uses JWT-based authentication with Redux for state management:
+
+- Login/Register pages for user authentication
+- Protected routes using `ProtectedRoute` component
+- Token stored in localStorage (with SSR safety checks)
+- Automatic token refresh and validation
+
+## 🗂️ State Management
+
+Redux Toolkit is used for global state management:
+
+- **Auth State**: User authentication, login, logout
+- **Store Provider**: Client-side Redux provider wrapper
+- **Persisted State**: Token persistence with localStorage
+
+## 🎨 Styling
+
+- **Tailwind CSS** - Utility-first CSS framework
+- **Radix UI** - Unstyled, accessible components
+- **Custom Components** - Pre-styled UI components in `src/components/ui/`
+
+## 📱 Pages
+
+- `/` - Home (redirects to dashboard)
+- `/login` - User login
+- `/register` - User registration
+- `/dashboard` - User dashboard (protected)
+- `/groups` - Study groups (protected)
+- `/profile` - User profile (protected)
+
+## 🔄 Migration from CRA
+
+This project was migrated from Create React App to Next.js. See [MIGRATION.md](./MIGRATION.md) for details.
+
+### Key Changes
+
+- React Router → Next.js App Router
+- `REACT_APP_*` → `NEXT_PUBLIC_*` environment variables
+- Added `'use client'` directive to client components
+- SSR-safe localStorage access
+- Updated import paths and navigation
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+### Other Platforms
+
+1. Build the app: `npm run build`
+2. Start the server: `npm start`
+3. Or deploy the `.next` folder to your hosting service
+
+## 📚 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Next.js App Router](https://nextjs.org/docs/app)
+- [React Documentation](https://react.dev)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [Redux Toolkit](https://redux-toolkit.js.org)
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -163,6 +217,7 @@ All API endpoints are Next.js API routes located in `/app/api/*`:
 4. Test thoroughly
 5. Submit a pull request
 
-## 📜 License
+## 📄 License
 
 This project is licensed under the MIT License.
+

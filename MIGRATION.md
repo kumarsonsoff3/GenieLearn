@@ -122,7 +122,7 @@ const token = typeof window !== 'undefined'
 
 ### Development
 ```bash
-cd frontend
+# Project is now in root directory
 npm install
 npm run dev
 ```
@@ -130,13 +130,13 @@ Visit http://localhost:3000
 
 ### Production
 ```bash
-cd frontend
+# Project is now in root directory
 npm run build
 npm start
 ```
 
 ### Environment Setup
-Create a `.env.local` file in the frontend directory:
+Create a `.env.local` file in the root directory:
 ```
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8001
 NEXT_PUBLIC_WS_URL=ws://localhost:8001
