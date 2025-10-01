@@ -49,13 +49,10 @@ import {
   Clock,
   BookOpen,
 } from "lucide-react";
-import axios from "axios";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import api from "../utils/axios";
 
 const Groups = () => {
-  const { token, user } = useSelector(state => state.auth);
+  const { user } = useSelector(state => state.auth);
   const [publicGroups, setPublicGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,13 +78,12 @@ const Groups = () => {
   const fetchGroups = async () => {
     try {
       setLoading(true);
-      const headers = { Authorization: `Bearer ${token}` };
 
       const [publicResponse, myGroupsResponse, statsResponse] =
         await Promise.all([
-          axios.get(`${API}/groups`, { headers }),
-          axios.get(`${API}/groups/my-groups`, { headers }),
-          axios.get(`${API}/groups/stats`, { headers }),
+          api.get('/groups/list'),
+          api.get('/groups/my-groups'),
+          api.get('/groups/stats'),
         ]);
 
       // Show ALL public groups (both joined and not joined)
@@ -104,8 +100,7 @@ const Groups = () => {
   const handleCreateGroup = async e => {
     e.preventDefault();
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.post(`${API}/groups`, formData, { headers });
+      await api.post('/groups/create', formData);
 
       setCreateGroupOpen(false);
       setFormData({ name: "", description: "", is_public: true });
@@ -117,8 +112,7 @@ const Groups = () => {
 
   const handleJoinGroup = async groupId => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.post(`${API}/groups/${groupId}/join`, {}, { headers });
+      await api.post(`/groups/${groupId}/join`);
       fetchGroups(); // Refresh groups
     } catch (error) {
       console.error("Error joining group:", error);
@@ -127,12 +121,7 @@ const Groups = () => {
 
   const handleLeaveGroup = async groupId => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.post(
-        `${API}/groups/${groupId}/leave`,
-        {},
-        { headers }
-      );
+      const response = await api.post(`/groups/${groupId}/leave`);
 
       // Show success message
       alert(response.data.message || "Left group successfully");

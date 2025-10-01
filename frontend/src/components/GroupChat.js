@@ -13,24 +13,18 @@ import {
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
 import { Send, ArrowLeft, Users, Crown } from "lucide-react";
-import axios from "axios";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-const WS_URL = `${BACKEND_URL.replace("http://", "ws://").replace(
-  "https://",
-  "wss://"
-)}`;
-const API = `${BACKEND_URL}/api`;
+import api from "../utils/axios";
+import { client } from "../lib/appwrite";
+import { DATABASE_ID, COLLECTIONS } from "../lib/appwrite-config";
 
 const GroupChat = ({ group, onBack }) => {
-  const { token, user } = useSelector(state => state.auth);
+  const { user } = useSelector(state => state.auth);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [ws, setWs] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const connectWebSocketRef = useRef(null);
+  const unsubscribeRef = useRef(null);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -46,97 +40,44 @@ const GroupChat = ({ group, onBack }) => {
     loadMessageHistory();
   }, [group.id]);
 
-  // Setup WebSocket connection
+  // Setup Appwrite Realtime subscription
   useEffect(() => {
-    if (!group.id || !token) return;
+    if (!group.id) return;
 
-    let currentWs = null;
-    let reconnectTimeout = null;
-
-    const connectWebSocket = () => {
-      // Clear any existing connection
-      if (currentWs) {
-        currentWs.close();
-      }
-
-      const websocket = new WebSocket(
-        `${WS_URL}/api/ws/${group.id}?token=${token}`
-      );
-      currentWs = websocket;
-
-      websocket.onopen = () => {
-        console.log("WebSocket connected");
-        setIsConnected(true);
-        setWs(websocket);
-      };
-
-      websocket.onmessage = event => {
-        const data = JSON.parse(event.data);
-        console.log("Received message:", data);
-
-        if (data.type === "message") {
-          const newMsg = {
-            id: data.id,
-            content: data.content,
-            sender_id: data.sender_id,
-            sender_name: data.sender_name,
-            timestamp: new Date(data.timestamp),
-          };
-          setMessages(prev => [...prev, newMsg]);
-        } else if (data.type === "system") {
-          // Handle system messages (user joined/left)
-          const systemMsg = {
-            id: `system-${Date.now()}-${Math.random()}`,
-            content: data.content,
-            sender_id: "system",
-            sender_name: "System",
-            timestamp: new Date(data.timestamp),
-            type: "system",
-          };
-          setMessages(prev => [...prev, systemMsg]);
+    // Subscribe to new messages in this group
+    const unsubscribe = client.subscribe(
+      `databases.${DATABASE_ID}.collections.${COLLECTIONS.MESSAGES}.documents`,
+      (response) => {
+        // Check if this message belongs to the current group
+        if (response.payload.group_id === group.id) {
+          if (response.events.includes('databases.*.collections.*.documents.*.create')) {
+            // New message created
+            setMessages(prev => [...prev, {
+              id: response.payload.$id,
+              content: response.payload.content,
+              group_id: response.payload.group_id,
+              sender_id: response.payload.sender_id,
+              sender_name: response.payload.sender_name,
+              timestamp: response.payload.timestamp,
+            }]);
+          }
         }
-      };
+      }
+    );
 
-      websocket.onclose = () => {
-        console.log("WebSocket disconnected");
-        setIsConnected(false);
-        setWs(null);
-        // Disable auto-reconnection to prevent duplicate connections
-        // reconnectTimeout = setTimeout(connectWebSocket, 3000);
-      };
+    setIsConnected(true);
+    unsubscribeRef.current = unsubscribe;
 
-      websocket.onerror = error => {
-        console.error("WebSocket error:", error);
-        setIsConnected(false);
-      };
-    };
-
-    connectWebSocket();
-    connectWebSocketRef.current = connectWebSocket;
-
-    // Cleanup on unmount
     return () => {
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-      }
-      if (currentWs) {
-        currentWs.close();
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
       }
     };
-  }, [group.id, token]);
-
-  const handleReconnect = () => {
-    if (connectWebSocketRef.current) {
-      connectWebSocketRef.current();
-    }
-  };
+  }, [group.id]);
 
   const loadMessageHistory = async () => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API}/groups/${group.id}/messages`, {
-        headers,
-      });
+      const response = await api.get(`/groups/${group.id}/messages`);
       const formattedMessages = response.data.map(msg => ({
         ...msg,
         timestamp: new Date(msg.timestamp),
@@ -147,18 +88,22 @@ const GroupChat = ({ group, onBack }) => {
     }
   };
 
-  const sendMessage = e => {
+  const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !ws || !isConnected) return;
+    if (!newMessage.trim()) return;
 
-    const messageData = {
-      type: "message",
-      content: newMessage.trim(),
-    };
-
-    ws.send(JSON.stringify(messageData));
-    setNewMessage("");
-    inputRef.current?.focus();
+    try {
+      await api.post('/messages/create', {
+        content: newMessage.trim(),
+        group_id: group.id,
+      });
+      
+      setNewMessage("");
+      inputRef.current?.focus();
+      // Message will appear via Realtime subscription
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
 
   const formatTime = timestamp => {
