@@ -12,7 +12,10 @@ const validateAndSanitizeEmail = email => {
   }
 
   const sanitizedEmail = email.trim().toLowerCase();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // ReDoS-safe email regex (matches the User model validation)
+  const emailRegex =
+    /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
 
   if (!emailRegex.test(sanitizedEmail)) {
     return { valid: false, error: "Invalid email format" };
