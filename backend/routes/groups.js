@@ -26,11 +26,33 @@ const cleanupEmptyGroups = async () => {
 router.post("/", authenticateToken, async (req, res) => {
   try {
     const { name, description, is_public } = req.body;
+
+    // Input validation
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      return res.status(400).json({ detail: "Group name is required" });
+    }
+    if (name.trim().length > 100) {
+      return res
+        .status(400)
+        .json({ detail: "Group name must be less than 100 characters" });
+    }
+    if (description && typeof description !== "string") {
+      return res.status(400).json({ detail: "Description must be a string" });
+    }
+    if (description && description.length > 500) {
+      return res
+        .status(400)
+        .json({ detail: "Description must be less than 500 characters" });
+    }
+    if (is_public !== undefined && typeof is_public !== "boolean") {
+      return res.status(400).json({ detail: "is_public must be a boolean" });
+    }
+
     const user = await User.findOne({ email: req.user.sub });
 
     const group = new Group({
-      name,
-      description,
+      name: name.trim(),
+      description: description ? description.trim() : "",
       is_public: is_public !== undefined ? is_public : true,
       creator_id: user.id,
       members: [user.id],
