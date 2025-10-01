@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { getCurrentUser } from "../store/authSlice";
@@ -13,6 +13,7 @@ import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Separator } from "../components/ui/separator";
 import Layout from "../components/Layout";
+import { CreateGroupModal } from "../components/shared";
 import {
   Users,
   Settings,
@@ -33,16 +34,52 @@ import {
   Brain,
   UserPlus,
 } from "lucide-react";
+import axios from "axios";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { user, loading } = useSelector(state => state.auth);
+  const { user, loading, token } = useSelector(state => state.auth);
+  const [userStats, setUserStats] = useState({
+    groupsJoined: 0,
+    messagesSent: 0,
+    learningHours: 0,
+    tasksCompleted: 0,
+  });
 
   useEffect(() => {
     if (!user) {
       dispatch(getCurrentUser());
     }
   }, [dispatch, user]);
+
+  useEffect(() => {
+    if (user && token) {
+      fetchUserStats();
+    }
+  }, [user, token]);
+
+  const fetchUserStats = async () => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Fetch user's groups and message stats
+      const [myGroupsResponse, messageStatsResponse] = await Promise.all([
+        axios.get(`${API}/groups/my-groups`, { headers }),
+        axios.get(`${API}/users/me/messages/stats`, { headers }),
+      ]);
+
+      setUserStats(prevStats => ({
+        ...prevStats,
+        groupsJoined: myGroupsResponse.data.length,
+        messagesSent: messageStatsResponse.data.messagesSent,
+      }));
+    } catch (error) {
+      console.error("Error fetching user stats:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -103,23 +140,36 @@ const Dashboard = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg hover:shadow-xl hover:from-blue-100 hover:to-blue-200 transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-600 text-sm font-medium">
-                    Groups Joined
-                  </p>
-                  <p className="text-3xl font-bold text-blue-700">0</p>
+          <Link to="/groups" className="block">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-lg hover:shadow-xl hover:from-blue-100 hover:to-blue-200 transition-all duration-300 hover:scale-105 cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-600 text-sm font-medium">
+                      Groups Joined
+                    </p>
+                    <p className="text-3xl font-bold text-blue-700">
+                      {userStats.groupsJoined}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Users className="h-8 w-8 text-blue-500" />
+                    <ArrowRight className="h-4 w-4 text-blue-400" />
+                  </div>
                 </div>
-                <Users className="h-8 w-8 text-blue-500" />
-              </div>
-              <div className="mt-2 flex items-center text-xs text-blue-600">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                <span>Ready to join your first group!</span>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="mt-2 flex items-center text-xs text-blue-600">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  <span>
+                    {userStats.groupsJoined === 0
+                      ? "Ready to join your first group!"
+                      : `Active in ${userStats.groupsJoined} group${
+                          userStats.groupsJoined > 1 ? "s" : ""
+                        }`}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
 
           <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 shadow-lg hover:shadow-xl hover:from-orange-100 hover:to-orange-200 transition-all duration-300">
             <CardContent className="p-6">
@@ -128,13 +178,19 @@ const Dashboard = () => {
                   <p className="text-orange-600 text-sm font-medium">
                     Messages Sent
                   </p>
-                  <p className="text-3xl font-bold text-orange-700">0</p>
+                  <p className="text-3xl font-bold text-orange-700">
+                    {userStats.messagesSent}
+                  </p>
                 </div>
                 <MessageCircle className="h-8 w-8 text-orange-500" />
               </div>
               <div className="mt-2 flex items-center text-xs text-orange-600">
                 <Activity className="h-3 w-3 mr-1" />
-                <span>Start your first conversation</span>
+                <span>
+                  {userStats.messagesSent === 0
+                    ? "Start your first conversation"
+                    : `Keep the conversation going!`}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -146,7 +202,9 @@ const Dashboard = () => {
                   <p className="text-green-600 text-sm font-medium">
                     Learning Hours
                   </p>
-                  <p className="text-3xl font-bold text-green-700">0</p>
+                  <p className="text-3xl font-bold text-green-700">
+                    {userStats.learningHours}
+                  </p>
                 </div>
                 <Clock className="h-8 w-8 text-green-500" />
               </div>
@@ -164,7 +222,9 @@ const Dashboard = () => {
                   <p className="text-orange-600 text-sm font-medium">
                     Achievements
                   </p>
-                  <p className="text-3xl font-bold text-orange-700">0</p>
+                  <p className="text-3xl font-bold text-orange-700">
+                    {userStats.tasksCompleted}
+                  </p>
                 </div>
                 <Award className="h-8 w-8 text-orange-500" />
               </div>
@@ -205,19 +265,29 @@ const Dashboard = () => {
                     </Button>
                   </Link>
 
-                  <Button className="w-full h-auto p-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-left justify-start transition-all duration-200 shadow-lg hover:shadow-xl">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-white/20 rounded-lg">
-                        <Plus className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="font-semibold">Create Group</div>
-                        <div className="text-xs text-orange-100">
-                          Start your own community
+                  <CreateGroupModal
+                    trigger={
+                      <Button className="w-full h-auto p-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-left justify-start transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-white/20 rounded-lg">
+                            <Plus className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <div className="font-semibold">Create Group</div>
+                            <div className="text-xs text-orange-100">
+                              Start your own community
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </Button>
+                      </Button>
+                    }
+                    onGroupCreated={() => {
+                      // Refresh user stats after group creation
+                      // You can add specific logic here if needed
+                      console.log("Group created from Dashboard");
+                    }}
+                    buttonClassName="w-full h-auto p-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                  />
 
                   <Link to="/profile">
                     <Button

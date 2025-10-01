@@ -1,6 +1,6 @@
 # Environment Setup Guide
 
-This guide explains the environment variables required for the MVP application.
+This guide explains the environment variables required for the GenieLearn application.
 
 ## Backend Environment Variables (.env)
 

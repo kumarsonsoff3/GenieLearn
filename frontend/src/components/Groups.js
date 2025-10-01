@@ -53,12 +53,19 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const Groups = () => {
-  const { token } = useSelector(state => state.auth);
+  const { token, user } = useSelector(state => state.auth);
   const [publicGroups, setPublicGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [stats, setStats] = useState({
+    totalGroups: 0,
+    totalPublicGroups: 0,
+    userJoinedGroups: 0,
+    publicGroupsJoined: 0,
+    publicGroupsNotJoined: 0,
+  });
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -74,13 +81,17 @@ const Groups = () => {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [publicResponse, myGroupsResponse] = await Promise.all([
-        axios.get(`${API}/groups`, { headers }),
-        axios.get(`${API}/groups/my-groups`, { headers }),
-      ]);
+      const [publicResponse, myGroupsResponse, statsResponse] =
+        await Promise.all([
+          axios.get(`${API}/groups`, { headers }),
+          axios.get(`${API}/groups/my-groups`, { headers }),
+          axios.get(`${API}/groups/stats`, { headers }),
+        ]);
 
+      // Show ALL public groups (both joined and not joined)
       setPublicGroups(publicResponse.data);
       setMyGroups(myGroupsResponse.data);
+      setStats(statsResponse.data);
     } catch (error) {
       console.error("Error fetching groups:", error);
     } finally {
@@ -115,15 +126,30 @@ const Groups = () => {
   const handleLeaveGroup = async groupId => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      await axios.post(`${API}/groups/${groupId}/leave`, {}, { headers });
-      fetchGroups(); // Refresh groups
+      const response = await axios.post(
+        `${API}/groups/${groupId}/leave`,
+        {},
+        { headers }
+      );
+
+      // Show success message
+      alert(response.data.message || "Left group successfully");
+
+      // Refresh groups after successful leave
+      await fetchGroups();
     } catch (error) {
       console.error("Error leaving group:", error);
+      if (error.response && error.response.data.detail) {
+        // Show user-friendly error message
+        alert(error.response.data.detail);
+      } else {
+        alert("Failed to leave group. Please try again.");
+      }
     }
   };
 
   const GroupCard = ({ group, showJoinButton = false }) => (
-    <Card className="h-full shadow-lg hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50 hover:from-blue-50 hover:to-orange-50 hover:border-2 hover:border-gradient-to-r hover:border-blue-200">
+    <Card className="h-full shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100 bg-white hover:bg-gray-50 hover:border-blue-200">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
@@ -145,6 +171,15 @@ const Groups = () => {
                   {group.member_count} member
                   {group.member_count !== 1 ? "s" : ""}
                 </Badge>
+                {user && group.creator_id === user.id && (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs bg-orange-100 text-orange-700 border-orange-300"
+                  >
+                    <Crown className="h-3 w-3 mr-1" />
+                    Creator
+                  </Badge>
+                )}
                 {group.is_public ? (
                   <Badge
                     variant="outline"
@@ -173,6 +208,10 @@ const Groups = () => {
         </p>
 
         <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+          <div className="flex items-center space-x-1">
+            <Crown className="h-3 w-3" />
+            <span>Created by {group.creator_name || "Unknown"}</span>
+          </div>
           <div className="flex items-center space-x-1">
             <Calendar className="h-3 w-3" />
             <span>
@@ -274,19 +313,17 @@ const Groups = () => {
                 <div className="flex items-center space-x-6 text-sm">
                   <div className="flex items-center space-x-1">
                     <TrendingUp className="h-4 w-4" />
-                    <span>{myGroups.length} groups joined</span>
+                    <span>{stats.userJoinedGroups} groups joined</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Globe className="h-4 w-4" />
-                    <span>{publicGroups.length} public groups</span>
+                    <span>{stats.totalPublicGroups} public groups</span>
                   </div>
                 </div>
               </div>
               <div className="hidden lg:block">
                 <div className="text-right">
-                  <div className="text-3xl font-bold">
-                    {myGroups.length + publicGroups.length}
-                  </div>
+                  <div className="text-3xl font-bold">{stats.totalGroups}</div>
                   <div className="text-blue-200">Total Groups</div>
                 </div>
               </div>
@@ -422,13 +459,13 @@ const Groups = () => {
               value="my-groups"
               className="text-sm font-medium rounded-md"
             >
-              My Groups ({myGroups.length})
+              My Groups ({stats.userJoinedGroups})
             </TabsTrigger>
             <TabsTrigger
               value="discover"
               className="text-sm font-medium rounded-md"
             >
-              Discover Groups ({publicGroups.length})
+              All Public Groups ({stats.totalPublicGroups})
             </TabsTrigger>
           </TabsList>
 
