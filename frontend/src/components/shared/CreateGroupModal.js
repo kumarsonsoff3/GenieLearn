@@ -40,7 +40,7 @@ const CreateGroupModal = ({
     console.log("Token:", token ? "Present" : "Missing");
 
     try {
-      const response = await api.post("/groups", formData);
+      const response = await api.post("groups", formData);
 
       console.log("Group creation response:", response.data);
 
