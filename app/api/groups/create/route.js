@@ -1,17 +1,15 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createSessionClient, createAdminClient } from '@/src/lib/appwrite-server';
-import { DATABASE_ID, COLLECTIONS } from '@/src/lib/appwrite-config';
-import { ID, Query } from 'node-appwrite';
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { Client, Account, Databases, ID, Query } from "node-appwrite";
 
 export async function POST(request) {
   try {
     const cookieStore = await cookies();
-    const session = cookieStore.get('session');
+    const session = cookieStore.get("session");
 
     if (!session) {
       return NextResponse.json(
-        { detail: 'Not authenticated' },
+        { detail: "Not authenticated" },
         { status: 401 }
       );
     }
@@ -21,55 +19,71 @@ export async function POST(request) {
     // Validation
     if (!name || !name.trim()) {
       return NextResponse.json(
-        { detail: 'Group name is required' },
+        { detail: "Group name is required" },
         { status: 400 }
       );
     }
 
     if (name.trim().length > 100) {
       return NextResponse.json(
-        { detail: 'Group name must be less than 100 characters' },
+        { detail: "Group name must be less than 100 characters" },
         { status: 400 }
       );
     }
 
     if (description && description.length > 500) {
       return NextResponse.json(
-        { detail: 'Description must be less than 500 characters' },
+        { detail: "Description must be less than 500 characters" },
         { status: 400 }
       );
     }
 
-    const { databases } = createSessionClient(session.value);
-    const { users } = createAdminClient();
+    // Parse session data
+    let sessionData;
+    try {
+      sessionData = JSON.parse(session.value);
+    } catch {
+      return NextResponse.json(
+        { detail: "Invalid session format, please login again" },
+        { status: 401 }
+      );
+    }
 
-    // Get user info
-    const account = await users.get(session.userId);
+    // Create admin client for secure operations
+    const adminClient = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+      .setKey(process.env.APPWRITE_API_KEY);
+
+    const databases = new Databases(adminClient);
+
+    // Get user ID from session
+    const userId = sessionData.userId;
 
     // Get user profile for name
-    let userName = account.name;
+    let userName = "User";
     try {
       const profile = await databases.getDocument(
-        DATABASE_ID,
-        COLLECTIONS.USER_PROFILES,
-        account.$id
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
+        userId
       );
       userName = profile.name;
     } catch (error) {
-      console.log('Profile not found, using account name');
+      console.log("Profile not found, using account name");
     }
 
     // Create group document
     const group = await databases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.GROUPS,
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+      process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
       ID.unique(),
       {
         name: name.trim(),
-        description: description ? description.trim() : '',
+        description: description ? description.trim() : "",
         is_public: is_public !== undefined ? is_public : true,
-        creator_id: account.$id,
-        members: [account.$id],
+        creator_id: userId,
+        members: [userId],
         created_at: new Date().toISOString(),
       }
     );
@@ -85,9 +99,9 @@ export async function POST(request) {
       created_at: group.created_at,
     });
   } catch (error) {
-    console.error('Create group error:', error);
+    console.error("Create group error:", error);
     return NextResponse.json(
-      { detail: error.message || 'Internal server error' },
+      { detail: error.message || "Internal server error" },
       { status: 500 }
     );
   }

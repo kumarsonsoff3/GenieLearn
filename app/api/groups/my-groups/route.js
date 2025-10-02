@@ -1,52 +1,66 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createSessionClient, createAdminClient } from '@/src/lib/appwrite-server';
-import { DATABASE_ID, COLLECTIONS } from '@/src/lib/appwrite-config';
-import { Query } from 'node-appwrite';
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { Client, Account, Databases, Query } from "node-appwrite";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const session = cookieStore.get('session');
+    const session = cookieStore.get("session");
 
     if (!session) {
       return NextResponse.json(
-        { detail: 'Not authenticated' },
+        { detail: "Not authenticated" },
         { status: 401 }
       );
     }
 
-    const { databases } = createSessionClient(session.value);
-    const { users } = createAdminClient();
+    // Parse session data
+    let sessionData;
+    try {
+      sessionData = JSON.parse(session.value);
+    } catch {
+      return NextResponse.json(
+        { detail: "Invalid session format, please login again" },
+        { status: 401 }
+      );
+    }
 
-    // Get current user
-    const account = await users.get(session.userId);
+    // Create admin client for secure operations
+    const adminClient = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+      .setKey(process.env.APPWRITE_API_KEY);
+
+    const databases = new Databases(adminClient);
+
+    // Get user ID from session
+    const userId = sessionData.userId;
 
     // Get all groups
     const { documents: allGroups } = await databases.listDocuments(
-      DATABASE_ID,
-      COLLECTIONS.GROUPS,
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+      process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
       [Query.limit(1000)]
     );
 
     // Filter groups where user is a member
-    const userGroups = allGroups.filter(group => 
-      group.members?.includes(account.$id)
+    const userGroups = allGroups.filter(group =>
+      group.members?.includes(userId)
     );
 
     // Enrich groups with creator info
     const enrichedGroups = await Promise.all(
-      userGroups.map(async (group) => {
-        let creatorName = 'Unknown';
+      userGroups.map(async group => {
+        let creatorName = "Unknown";
         try {
           const profile = await databases.getDocument(
-            DATABASE_ID,
-            COLLECTIONS.USER_PROFILES,
+            process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+            process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
             group.creator_id
           );
           creatorName = profile.name;
         } catch (error) {
-          console.log('Creator profile not found');
+          console.log("Creator profile not found");
         }
 
         return {
@@ -65,9 +79,9 @@ export async function GET() {
 
     return NextResponse.json(enrichedGroups);
   } catch (error) {
-    console.error('Get user groups error:', error);
+    console.error("Get user groups error:", error);
     return NextResponse.json(
-      { detail: error.message || 'Internal server error' },
+      { detail: error.message || "Internal server error" },
       { status: 500 }
     );
   }

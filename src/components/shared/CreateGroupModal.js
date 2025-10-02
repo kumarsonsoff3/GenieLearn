@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { Users, Plus } from "lucide-react";
-import api from "../../utils/axios";
+import api from "../../utils/enhancedApi";
 
 const CreateGroupModal = ({
   trigger,
@@ -36,13 +36,8 @@ const CreateGroupModal = ({
     setLoading(true);
     setError("");
 
-    console.log("Creating group with data:", formData);
-    console.log("Token:", token ? "Present" : "Missing");
-
     try {
       const response = await api.post("groups", formData);
-
-      console.log("Group creation response:", response.data);
 
       // Success - close modal and reset form
       setOpen(false);

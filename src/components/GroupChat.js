@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -13,8 +13,8 @@ import {
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
 import { Send, ArrowLeft, Users, Crown } from "lucide-react";
-import api from "../utils/axios";
-import { client } from "../lib/appwrite";
+import api from "../utils/enhancedApi";
+import { createRealtimeClient } from "../lib/appwrite";
 import { DATABASE_ID, COLLECTIONS } from "../lib/appwrite-config";
 
 const GroupChat = ({ group, onBack }) => {
@@ -35,34 +35,73 @@ const GroupChat = ({ group, onBack }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Load message history when component mounts
-  useEffect(() => {
-    loadMessageHistory();
-  }, [group.id]);
+  // Helper function to handle real-time message updates
+  const handleRealtimeMessage = useCallback(
+    response => {
+      if (response.payload?.group_id === group.id) {
+        const isCreateEvent = response.events.some(event =>
+          event.includes("create")
+        );
+
+        if (isCreateEvent) {
+          const newMessage = {
+            id: response.payload.$id,
+            content: response.payload.content,
+            group_id: response.payload.group_id,
+            sender_id: response.payload.sender_id,
+            sender_name: response.payload.sender_name,
+            timestamp: new Date(
+              response.payload.timestamp || response.payload.$createdAt
+            ),
+            is_system_message: response.payload.is_system_message || false,
+            system_message_type: response.payload.system_message_type || null,
+          };
+
+          setMessages(prev => {
+            // Check for existing real message
+            if (
+              prev.some(msg => msg.id === newMessage.id && !msg.isOptimistic)
+            ) {
+              return prev;
+            }
+
+            // Replace optimistic message with same content from same user, or add new message
+            const existingOptimistic = prev.find(
+              msg =>
+                msg.isOptimistic &&
+                msg.sender_id === newMessage.sender_id &&
+                msg.content === newMessage.content &&
+                Math.abs(
+                  new Date(msg.timestamp) - new Date(newMessage.timestamp)
+                ) < 10000 // Within 10 seconds
+            );
+
+            if (existingOptimistic) {
+              // Replace optimistic message with real one
+              return prev.map(msg =>
+                msg.id === existingOptimistic.id ? newMessage : msg
+              );
+            } else {
+              // Add new message
+              return [...prev, newMessage].sort(
+                (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+              );
+            }
+          });
+        }
+      }
+    },
+    [group.id]
+  );
 
   // Setup Appwrite Realtime subscription
   useEffect(() => {
     if (!group.id) return;
 
-    // Subscribe to new messages in this group
-    const unsubscribe = client.subscribe(
+    const realtimeClient = createRealtimeClient();
+    const unsubscribe = realtimeClient.subscribe(
       `databases.${DATABASE_ID}.collections.${COLLECTIONS.MESSAGES}.documents`,
-      (response) => {
-        // Check if this message belongs to the current group
-        if (response.payload.group_id === group.id) {
-          if (response.events.includes('databases.*.collections.*.documents.*.create')) {
-            // New message created
-            setMessages(prev => [...prev, {
-              id: response.payload.$id,
-              content: response.payload.content,
-              group_id: response.payload.group_id,
-              sender_id: response.payload.sender_id,
-              sender_name: response.payload.sender_name,
-              timestamp: response.payload.timestamp,
-            }]);
-          }
-        }
-      }
+      handleRealtimeMessage
     );
 
     setIsConnected(true);
@@ -73,9 +112,9 @@ const GroupChat = ({ group, onBack }) => {
         unsubscribeRef.current();
       }
     };
-  }, [group.id]);
+  }, [group.id, handleRealtimeMessage]);
 
-  const loadMessageHistory = async () => {
+  const loadMessageHistory = useCallback(async () => {
     try {
       const response = await api.get(`/groups/${group.id}/messages`);
       const formattedMessages = response.data.map(msg => ({
@@ -86,28 +125,96 @@ const GroupChat = ({ group, onBack }) => {
     } catch (error) {
       console.error("Error loading message history:", error);
     }
-  };
+  }, [group.id]);
 
-  const sendMessage = async (e) => {
+  // Load message history when component mounts
+  useEffect(() => {
+    loadMessageHistory();
+  }, [group.id, loadMessageHistory]);
+
+  const sendMessage = async e => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
+    const messageContent = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+
+    // Optimistic update - clear input immediately for better UX
+    setNewMessage("");
+    inputRef.current?.focus();
+
+    // Add optimistic message to UI immediately
+    const optimisticMessage = {
+      id: tempId,
+      content: messageContent,
+      group_id: group.id,
+      sender_id: user?.id,
+      sender_name: user?.name,
+      timestamp: new Date(),
+      is_system_message: false,
+      isOptimistic: true, // Flag to identify optimistic messages
+    };
+
+    setMessages(prev => [...prev, optimisticMessage]);
+
     try {
-      await api.post('/messages/create', {
-        content: newMessage.trim(),
+      // Send message to server (async)
+      const response = await api.post("/messages/create", {
+        content: messageContent,
         group_id: group.id,
       });
-      
-      setNewMessage("");
-      inputRef.current?.focus();
-      // Message will appear via Realtime subscription
+
+      // Replace optimistic message with real message when server responds
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === tempId
+            ? {
+                ...response.data,
+                timestamp: new Date(response.data.timestamp),
+                isOptimistic: false,
+              }
+            : msg
+        )
+      );
     } catch (error) {
       console.error("Error sending message:", error);
+
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+
+      // Restore the message content so user can try again
+      setNewMessage(messageContent);
+
+      // Show error feedback (you might want to add a toast notification here)
+      alert("Failed to send message. Please try again.");
     }
   };
 
+  const handleReconnect = useCallback(() => {
+    setIsConnected(false);
+
+    // Clean up existing subscription
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+
+    // Trigger re-subscription after a brief delay
+    setTimeout(() => {
+      const realtimeClient = createRealtimeClient();
+      const unsubscribe = realtimeClient.subscribe(
+        `databases.${DATABASE_ID}.collections.${COLLECTIONS.MESSAGES}.documents`,
+        handleRealtimeMessage
+      );
+
+      unsubscribeRef.current = unsubscribe;
+      setIsConnected(true);
+    }, 1000);
+  }, [handleRealtimeMessage]);
+
   const formatTime = timestamp => {
-    return timestamp.toLocaleTimeString([], {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -198,10 +305,10 @@ const GroupChat = ({ group, onBack }) => {
             {/* Messages for this date */}
             {dateMessages.map(message => {
               // System messages (user joined/left)
-              if (message.type === "system") {
+              if (message.type === "system" || message.is_system_message) {
                 return (
                   <div key={message.id} className="flex justify-center mb-3">
-                    <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
+                    <div className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
                       {message.content}
                     </div>
                   </div>
@@ -269,15 +376,27 @@ const GroupChat = ({ group, onBack }) => {
                             </Badge>
                           </div>
                         )}
-                      <p className="text-sm">{message.content}</p>
                       <p
-                        className={`text-xs mt-1 ${
+                        className={`text-sm ${
+                          message.isOptimistic ? "opacity-70" : ""
+                        }`}
+                      >
+                        {message.content}
+                      </p>
+                      <p
+                        className={`text-xs mt-1 flex items-center gap-1 ${
                           message.sender_id === user?.id
                             ? "text-blue-100"
                             : "text-gray-500"
                         }`}
                       >
                         {formatTime(message.timestamp)}
+                        {message.isOptimistic && (
+                          <span
+                            className="inline-block w-2 h-2 bg-current rounded-full animate-pulse"
+                            title="Sending..."
+                          ></span>
+                        )}
                       </p>
                     </div>
                   </div>

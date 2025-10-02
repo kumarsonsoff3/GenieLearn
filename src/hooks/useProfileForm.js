@@ -7,12 +7,13 @@ import useAuth from "./useAuth";
  * @returns {object} Profile form state and methods
  */
 const useProfileForm = () => {
-  const { user, refreshUser } = useAuth();
-  const { put, loading, error } = useApi();
+  const { user, updateProfile } = useAuth();
+  const { loading, error } = useApi();
 
   // Form state
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     subjects_of_interest: [],
   });
 
@@ -26,6 +27,7 @@ const useProfileForm = () => {
     if (user) {
       setFormData({
         name: user.name || "",
+        email: user.email || "",
         subjects_of_interest: user.subjects_of_interest || [],
       });
     }
@@ -43,6 +45,14 @@ const useProfileForm = () => {
   const updateName = useCallback(
     name => {
       updateField("name", name);
+    },
+    [updateField]
+  );
+
+  // Update email field specifically
+  const updateEmail = useCallback(
+    email => {
+      updateField("email", email);
     },
     [updateField]
   );
@@ -137,30 +147,48 @@ const useProfileForm = () => {
     setNewSubject("");
   }, [user]);
 
-  // Submit form
-  const submitForm = useCallback(async () => {
-    if (!isValid()) {
-      throw new Error("Form validation failed");
-    }
+  // Submit form with immediate UI update
+  const submitForm = useCallback(
+    async event => {
+      // Prevent default form submission behavior
+      if (event && event.preventDefault) {
+        event.preventDefault();
+      }
 
-    try {
-      await put("auth/profile", formData);
+      if (!isValid()) {
+        throw new Error("Form validation failed");
+      }
 
-      // Refresh user data
-      refreshUser();
+      try {
+        // Ensure email is included from user context (in case formData email is stale)
+        const submitData = {
+          ...formData,
+          email: user?.email || formData.email,
+        };
 
-      // Show success and exit editing mode
-      setSuccess(true);
-      setIsEditing(false);
+        // Use the new updateProfile function for immediate UI updates
+        await updateProfile(submitData);
 
-      // Hide success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
+        // Show success and exit editing mode
+        setSuccess(true);
+        setIsEditing(false);
 
-      return true;
-    } catch (err) {
-      throw err;
-    }
-  }, [formData, isValid, put, refreshUser]);
+        // Update form data immediately to reflect changes
+        setFormData(prev => ({
+          ...prev,
+          ...submitData,
+        }));
+
+        // Hide success message after 3 seconds
+        setTimeout(() => setSuccess(false), 3000);
+
+        return true;
+      } catch (err) {
+        throw err;
+      }
+    },
+    [formData, user, isValid, updateProfile]
+  );
 
   // Handle subject input key press
   const handleSubjectKeyPress = useCallback(
@@ -223,6 +251,7 @@ const useProfileForm = () => {
     // Form field methods
     updateField,
     updateName,
+    updateEmail,
     setNewSubject,
 
     // Subject management

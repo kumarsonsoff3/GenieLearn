@@ -16,7 +16,7 @@ const QuickActions = ({ navigate, onGroupCreated }) => {
           variant="outline"
           size="sm"
           className="w-full justify-start"
-          onClick={() => navigate("/groups")}
+          onClick={() => navigate.push("/groups")}
         >
           <BookOpen className="h-4 w-4 mr-2" />
           Browse Groups
@@ -43,7 +43,7 @@ const QuickActions = ({ navigate, onGroupCreated }) => {
           variant="outline"
           size="sm"
           className="w-full justify-start"
-          onClick={() => navigate("/groups")}
+          onClick={() => navigate.push("/groups")}
         >
           <User className="h-4 w-4 mr-2" />
           Find Friends

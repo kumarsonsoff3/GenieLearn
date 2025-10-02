@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import Link from "next/link";
 import { getCurrentUser } from "../store/authSlice";
@@ -36,9 +36,9 @@ import {
   Brain,
   UserPlus,
 } from "lucide-react";
-import api from "../utils/axios";
+import api from "../utils/enhancedApi";
 
-const Dashboard = () => {
+const Dashboard = React.memo(() => {
   const dispatch = useDispatch();
   const { user, loading } = useSelector(state => state.auth);
   const [userStats, setUserStats] = useState({
@@ -54,16 +54,12 @@ const Dashboard = () => {
     }
   }, [dispatch, user]);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserStats();
-    }
-  }, [user]);
+  const fetchUserStats = useCallback(async () => {
+    if (!user) return;
 
-  const fetchUserStats = async () => {
     try {
       // Fetch user's groups from new API
-      const myGroupsResponse = await api.get('/groups/my-groups');
+      const myGroupsResponse = await api.get("/groups/my-groups");
 
       setUserStats(prevStats => ({
         ...prevStats,
@@ -73,7 +69,26 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error fetching user stats:", error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchUserStats();
+  }, [fetchUserStats]);
+
+  const userInitial = useMemo(
+    () => user?.name?.charAt(0).toUpperCase() || "U",
+    [user?.name]
+  );
+
+  const userName = useMemo(
+    () => user?.name?.split(" ")[0] || "Student",
+    [user?.name]
+  );
+
+  const userSubjectsCount = useMemo(
+    () => user?.subjects_of_interest?.length || 0,
+    [user?.subjects_of_interest]
+  );
 
   if (loading) {
     return (
@@ -95,12 +110,12 @@ const Dashboard = () => {
             <div className="flex items-center space-x-6">
               <Avatar className="h-20 w-20 border-4 border-white/20 shadow-lg">
                 <AvatarFallback className="text-2xl font-bold bg-white/20 text-white">
-                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                  {userInitial}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h1 className="text-4xl font-bold mb-2">
-                  Welcome back, {user?.name?.split(" ")[0] || "Student"}! 🎯
+                  Welcome back, {userName}! 🎯
                 </h1>
                 <p className="text-xl text-blue-100 mb-3">
                   Continue your GenieLearn journey
@@ -112,9 +127,7 @@ const Dashboard = () => {
                   </div>
                   <div className="flex items-center space-x-1">
                     <Target className="h-4 w-4" />
-                    <span>
-                      {user?.subjects_of_interest?.length || 0} subjects
-                    </span>
+                    <span>{userSubjectsCount} subjects</span>
                   </div>
                 </div>
               </div>
@@ -278,7 +291,6 @@ const Dashboard = () => {
                     onGroupCreated={() => {
                       // Refresh user stats after group creation
                       // You can add specific logic here if needed
-                      console.log("Group created from Dashboard");
                     }}
                     buttonClassName="w-full h-auto p-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
                   />
@@ -517,6 +529,8 @@ const Dashboard = () => {
       </div>
     </Layout>
   );
-};
+});
+
+Dashboard.displayName = "Dashboard";
 
 export default Dashboard;

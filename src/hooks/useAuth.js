@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useCallback } from "react";
-import { getCurrentUser } from "../store/authSlice";
+import { getCurrentUser, updateUserProfile } from "../store/authSlice";
 
 /**
  * Custom hook for authentication logic and user management
@@ -8,19 +8,45 @@ import { getCurrentUser } from "../store/authSlice";
  */
 const useAuth = () => {
   const dispatch = useDispatch();
-  const { user, token, loading, error } = useSelector(state => state.auth);
+  const {
+    user,
+    loading,
+    error,
+    isAuthenticated: authState,
+  } = useSelector(state => state.auth);
 
-  // Check if user is authenticated
+  // Check if user is authenticated (use the state from authSlice)
   const isAuthenticated = useCallback(() => {
-    return !!(user && token);
-  }, [user, token]);
+    return authState;
+  }, [authState]);
 
   // Get current user data
-  const refreshUser = useCallback(() => {
-    if (token) {
-      dispatch(getCurrentUser());
-    }
-  }, [dispatch, token]);
+  const refreshUser = useCallback(
+    (forceRefresh = false) => {
+      // For session-based auth, always try to refresh if authenticated
+      if (authState) {
+        dispatch(getCurrentUser(forceRefresh));
+      }
+    },
+    [dispatch, authState]
+  );
+
+  // Update user profile with immediate UI refresh
+  const updateProfile = useCallback(
+    async profileData => {
+      try {
+        const result = await dispatch(updateUserProfile(profileData));
+        if (updateUserProfile.fulfilled.match(result)) {
+          return result.payload;
+        } else {
+          throw new Error(result.payload || "Profile update failed");
+        }
+      } catch (error) {
+        throw error;
+      }
+    },
+    [dispatch]
+  );
 
   // Get user initials for avatar
   const getUserInitials = useCallback(() => {
@@ -61,7 +87,6 @@ const useAuth = () => {
   return {
     // State
     user,
-    token,
     loading,
     error,
 
@@ -74,6 +99,7 @@ const useAuth = () => {
 
     // Methods
     refreshUser,
+    updateProfile,
     isMemberOfGroup,
   };
 };

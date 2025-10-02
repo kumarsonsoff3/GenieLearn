@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { Client, Account, Databases, Query } from "node-appwrite";
+import { Client, Databases, Query } from "node-appwrite";
 
 export async function GET() {
   try {
@@ -36,35 +36,37 @@ export async function GET() {
     // Get user ID from session
     const userId = sessionData.userId;
 
-    // Get all groups
-    const { documents: allGroups } = await databases.listDocuments(
+    // Get message count for the user
+    const { total: messageCount } = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-      process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
-      [Query.limit(1000)]
+      process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
+      [
+        Query.equal("sender_id", userId),
+        Query.limit(1), // We only need the count
+      ]
     );
 
-    // Calculate statistics
-    const totalGroups = allGroups.length;
-    const publicGroups = allGroups.filter(g => g.is_public);
-    const totalPublicGroups = publicGroups.length;
+    // Get groups where user is a member
+    const { documents: userGroups } = await databases.listDocuments(
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+      process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
+      [
+        Query.search("members", userId),
+        Query.limit(100), // Reasonable limit for user groups
+      ]
+    );
 
-    const userGroups = allGroups.filter(g => g.members?.includes(userId));
-    const userJoinedGroups = userGroups.length;
+    const stats = {
+      total_messages: messageCount,
+      groups_joined: userGroups.length,
+      active_conversations: userGroups.length, // Simplified metric
+    };
 
-    const publicGroupsJoined = userGroups.filter(g => g.is_public).length;
-    const publicGroupsNotJoined = totalPublicGroups - publicGroupsJoined;
-
-    return NextResponse.json({
-      totalGroups,
-      totalPublicGroups,
-      userJoinedGroups,
-      publicGroupsJoined,
-      publicGroupsNotJoined,
-    });
+    return NextResponse.json(stats);
   } catch (error) {
-    console.error("Get stats error:", error);
+    console.error("Get user message stats error:", error);
     return NextResponse.json(
-      { detail: error.message || "Internal server error" },
+      { detail: error.message || "Failed to fetch message statistics" },
       { status: 500 }
     );
   }

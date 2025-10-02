@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useSelector } from "react-redux";
-import axios from "../utils/axios";
+import api from "../utils/enhancedApi";
 
 /**
  * Custom hook for making authenticated API calls with loading states and error handling
@@ -36,16 +36,16 @@ const useApi = (baseUrl = "") => {
         let response;
         switch (method.toLowerCase()) {
           case "get":
-            response = await axios.get(fullUrl, config);
+            response = await api.get(fullUrl, config);
             break;
           case "post":
-            response = await axios.post(fullUrl, data, config);
+            response = await api.post(fullUrl, data, config);
             break;
           case "put":
-            response = await axios.put(fullUrl, data, config);
+            response = await api.put(fullUrl, data, config);
             break;
           case "delete":
-            response = await axios.delete(fullUrl, config);
+            response = await api.delete(fullUrl, config);
             break;
           default:
             throw new Error(`Unsupported HTTP method: ${method}`);

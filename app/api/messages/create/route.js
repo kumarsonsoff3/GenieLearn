@@ -1,17 +1,26 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createSessionClient, createAdminClient } from '@/src/lib/appwrite-server';
-import { DATABASE_ID, COLLECTIONS } from '@/src/lib/appwrite-config';
-import { ID } from 'node-appwrite';
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { Client, Databases, Users, ID } from "node-appwrite";
 
 export async function POST(request) {
   try {
     const cookieStore = await cookies();
-    const session = cookieStore.get('session');
+    const session = cookieStore.get("session");
 
     if (!session) {
       return NextResponse.json(
-        { detail: 'Not authenticated' },
+        { detail: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Parse session data
+    let sessionData;
+    try {
+      sessionData = JSON.parse(session.value);
+    } catch {
+      return NextResponse.json(
+        { detail: "Invalid session format, please login again" },
         { status: 401 }
       );
     }
@@ -21,67 +30,76 @@ export async function POST(request) {
     // Validation
     if (!content || !content.trim()) {
       return NextResponse.json(
-        { detail: 'Message content is required' },
+        { detail: "Message content is required" },
         { status: 400 }
       );
     }
 
     if (content.length > 1000) {
       return NextResponse.json(
-        { detail: 'Message must be less than 1000 characters' },
+        { detail: "Message must be less than 1000 characters" },
         { status: 400 }
       );
     }
 
     if (!group_id) {
       return NextResponse.json(
-        { detail: 'Group ID is required' },
+        { detail: "Group ID is required" },
         { status: 400 }
       );
     }
 
-    const { databases } = createSessionClient(session.value);
-    const { users } = createAdminClient();
+    // Create admin client for secure operations
+    const adminClient = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+      .setKey(process.env.APPWRITE_API_KEY);
+
+    const databases = new Databases(adminClient);
+    const users = new Users(adminClient);
+
+    // Get user ID from session
+    const userId = sessionData.userId;
 
     // Get current user
-    const account = await users.get(session.userId);
+    const user = await users.get(userId);
 
     // Get user name
-    let userName = account.name;
+    let userName = user.name;
     try {
       const profile = await databases.getDocument(
-        DATABASE_ID,
-        COLLECTIONS.USER_PROFILES,
-        account.$id
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
+        userId
       );
       userName = profile.name;
     } catch (error) {
-      console.log('Profile not found, using account name');
+      console.log("Profile not found, using account name");
     }
 
     // Check if user is a member of the group
     const group = await databases.getDocument(
-      DATABASE_ID,
-      COLLECTIONS.GROUPS,
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+      process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
       group_id
     );
 
-    if (!group.members?.includes(account.$id)) {
+    if (!group.members?.includes(userId)) {
       return NextResponse.json(
-        { detail: 'Not a member of this group' },
+        { detail: "Not a member of this group" },
         { status: 403 }
       );
     }
 
     // Create message
     const message = await databases.createDocument(
-      DATABASE_ID,
-      COLLECTIONS.MESSAGES,
+      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+      process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
       ID.unique(),
       {
         content: content.trim(),
         group_id,
-        sender_id: account.$id,
+        sender_id: userId,
         sender_name: userName,
         timestamp: new Date().toISOString(),
       }
@@ -96,15 +114,12 @@ export async function POST(request) {
       timestamp: message.timestamp,
     });
   } catch (error) {
-    console.error('Create message error:', error);
+    console.error("Create message error:", error);
     if (error.code === 404) {
-      return NextResponse.json(
-        { detail: 'Group not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ detail: "Group not found" }, { status: 404 });
     }
     return NextResponse.json(
-      { detail: error.message || 'Internal server error' },
+      { detail: error.message || "Internal server error" },
       { status: 500 }
     );
   }

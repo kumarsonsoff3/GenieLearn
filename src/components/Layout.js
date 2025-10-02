@@ -1,10 +1,12 @@
-'use client'
+"use client";
 
-import React from "react";
+import React, { useCallback, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { logoutUser } from "../store/authSlice";
+import { prefetchPageData } from "../utils/pageCache";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import {
@@ -17,21 +19,68 @@ import {
 } from "../components/ui/dropdown-menu";
 import { Users, Settings, LogOut, Home, User } from "lucide-react";
 
-const Layout = ({ children }) => {
+const Layout = React.memo(({ children }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useSelector(state => state.auth);
 
-  const handleLogout = async () => {
-    await dispatch(logoutUser());
-    router.push("/login");
-  };
+  const handleLogout = useCallback(async () => {
+    try {
+      await dispatch(logoutUser());
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  }, [dispatch, router]);
 
-  const navItems = [
-    { path: "/dashboard", label: "Dashboard", icon: Home },
-    { path: "/groups", label: "Groups", icon: Users },
-  ];
+  const navItems = useMemo(
+    () => [
+      { path: "/dashboard", label: "Dashboard", icon: Home },
+      { path: "/groups", label: "Groups", icon: Users },
+    ],
+    []
+  );
+
+  const userInitial = useMemo(
+    () => user?.name?.charAt(0).toUpperCase() || "U",
+    [user?.name]
+  );
+
+  // Prefetch data for better page transitions
+  useEffect(() => {
+    const handleMouseEnter = page => {
+      prefetchPageData(page);
+    };
+
+    // Add hover listeners to navigation links for prefetching
+    const dashboardLink = document.querySelector('a[href="/dashboard"]');
+    const groupsLink = document.querySelector('a[href="/groups"]');
+
+    if (dashboardLink) {
+      dashboardLink.addEventListener("mouseenter", () =>
+        handleMouseEnter("dashboard")
+      );
+    }
+    if (groupsLink) {
+      groupsLink.addEventListener("mouseenter", () =>
+        handleMouseEnter("groups")
+      );
+    }
+
+    return () => {
+      if (dashboardLink) {
+        dashboardLink.removeEventListener("mouseenter", () =>
+          handleMouseEnter("dashboard")
+        );
+      }
+      if (groupsLink) {
+        groupsLink.removeEventListener("mouseenter", () =>
+          handleMouseEnter("groups")
+        );
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -40,9 +89,11 @@ const Layout = ({ children }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
-              <img
+              <Image
                 src="/logo.png"
                 alt="GenieLearn Logo"
+                width={40}
+                height={40}
                 className="h-10 w-10 object-contain"
               />
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
@@ -79,7 +130,7 @@ const Layout = ({ children }) => {
                   >
                     <Avatar className="h-9 w-9 border-2 border-gray-200 hover:border-blue-300 transition-colors">
                       <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                        {user?.name?.charAt(0).toUpperCase() || "U"}
+                        {userInitial}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -97,7 +148,7 @@ const Layout = ({ children }) => {
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-12 w-12 border-2 border-gray-200">
                           <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                            {user?.name?.charAt(0).toUpperCase() || "U"}
+                            {userInitial}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col space-y-1 min-w-0 flex-1">
@@ -165,6 +216,8 @@ const Layout = ({ children }) => {
       </main>
     </div>
   );
-};
+});
+
+Layout.displayName = "Layout";
 
 export default Layout;

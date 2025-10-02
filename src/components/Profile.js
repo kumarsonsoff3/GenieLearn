@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React from "react";
+import React, { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "../components/Layout";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -16,7 +16,7 @@ import ProfileForm from "./profile/ProfileForm";
 import QuickActions from "./profile/QuickActions";
 import { CreateGroupModal } from "./shared";
 
-const Profile = () => {
+const Profile = React.memo(() => {
   const router = useRouter();
 
   // Custom hooks
@@ -25,10 +25,13 @@ const Profile = () => {
   const profileForm = useProfileForm();
 
   // Handle group creation success
-  const handleGroupCreated = groupData => {
-    incrementGroupsJoined(); // Optimistic update
-    refreshStats(); // Refresh actual stats
-  };
+  const handleGroupCreated = useCallback(
+    groupData => {
+      incrementGroupsJoined(); // Optimistic update
+      refreshStats(); // Refresh actual stats
+    },
+    [incrementGroupsJoined, refreshStats]
+  );
 
   // Loading state
   if (!user) {
@@ -98,7 +101,7 @@ const Profile = () => {
 
               {/* Quick Actions */}
               <QuickActions
-                navigate={navigate}
+                navigate={router}
                 onGroupCreated={handleGroupCreated}
               />
             </div>
@@ -107,6 +110,8 @@ const Profile = () => {
       </div>
     </Layout>
   );
-};
+});
+
+Profile.displayName = "Profile";
 
 export default Profile;

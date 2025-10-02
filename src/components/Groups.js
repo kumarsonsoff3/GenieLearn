@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import Layout from "../components/Layout";
 import GroupChat from "../components/GroupChat";
@@ -31,6 +31,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Switch } from "../components/ui/switch";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Separator } from "../components/ui/separator";
+import { LoadingSpinner } from "../components/ui/loading-spinner";
+import { ErrorMessage } from "../components/ui/error-message";
 import {
   Users,
   Plus,
@@ -49,15 +51,19 @@ import {
   Clock,
   BookOpen,
 } from "lucide-react";
-import api from "../utils/axios";
+import api from "../utils/enhancedApi";
+import { useToast } from "./ToastProvider";
 
 const Groups = () => {
   const { user } = useSelector(state => state.auth);
+  const { showSuccess, showError } = useToast();
   const [publicGroups, setPublicGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
   const [stats, setStats] = useState({
     totalGroups: 0,
     totalPublicGroups: 0,
@@ -71,19 +77,17 @@ const Groups = () => {
     is_public: true,
   });
 
-  useEffect(() => {
-    fetchGroups();
-  }, []);
-
-  const fetchGroups = async () => {
+  // Memoize fetchGroups to prevent unnecessary re-calls
+  const fetchGroups = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
 
       const [publicResponse, myGroupsResponse, statsResponse] =
         await Promise.all([
-          api.get('/groups/list'),
-          api.get('/groups/my-groups'),
-          api.get('/groups/stats'),
+          api.get("/groups/list"),
+          api.get("/groups/my-groups"),
+          api.get("/groups/stats"),
         ]);
 
       // Show ALL public groups (both joined and not joined)
@@ -92,15 +96,21 @@ const Groups = () => {
       setStats(statsResponse.data);
     } catch (error) {
       console.error("Error fetching groups:", error);
+      setError("Failed to load groups. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Only fetch groups once on mount
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
   const handleCreateGroup = async e => {
     e.preventDefault();
     try {
-      await api.post('/groups/create', formData);
+      await api.post("/groups/create", formData);
 
       setCreateGroupOpen(false);
       setFormData({ name: "", description: "", is_public: true });
@@ -110,34 +120,78 @@ const Groups = () => {
     }
   };
 
-  const handleJoinGroup = async groupId => {
-    try {
-      await api.post(`/groups/${groupId}/join`);
-      fetchGroups(); // Refresh groups
-    } catch (error) {
-      console.error("Error joining group:", error);
-    }
-  };
+  // Memoize group join function
+  const handleJoinGroup = useCallback(
+    async groupId => {
+      try {
+        setActionLoading(prev => ({ ...prev, [groupId]: "joining" }));
+        await api.post(`/groups/${groupId}/join`);
 
-  const handleLeaveGroup = async groupId => {
-    try {
-      const response = await api.post(`/groups/${groupId}/leave`);
+        // Optimistically update the UI
+        setMyGroups(prev => {
+          const group = publicGroups.find(g => g.id === groupId);
+          return group ? [...prev, group] : prev;
+        });
 
-      // Show success message
-      alert(response.data.message || "Left group successfully");
+        // Show success toast
+        showSuccess("Successfully joined the group!");
 
-      // Refresh groups after successful leave
-      await fetchGroups();
-    } catch (error) {
-      console.error("Error leaving group:", error);
-      if (error.response && error.response.data.detail) {
-        // Show user-friendly error message
-        alert(error.response.data.detail);
-      } else {
-        alert("Failed to leave group. Please try again.");
+        // Refresh data in background
+        fetchGroups();
+      } catch (error) {
+        console.error("Error joining group:", error);
+        showError("Failed to join group. Please try again.");
+      } finally {
+        setActionLoading(prev => ({ ...prev, [groupId]: null }));
       }
-    }
-  };
+    },
+    [publicGroups, fetchGroups, showSuccess, showError]
+  );
+
+  // Memoize group leave function with better error handling
+  const handleLeaveGroup = useCallback(
+    async groupId => {
+      try {
+        setActionLoading(prev => ({ ...prev, [groupId]: "leaving" }));
+        const response = await api.post(`/groups/${groupId}/leave`);
+
+        // Show success toast
+        showSuccess("Successfully left the group!");
+
+        // Optimistically update the UI
+        setMyGroups(prev => prev.filter(g => g.id !== groupId));
+
+        // Refresh data in background
+        fetchGroups();
+      } catch (error) {
+        console.error("Error leaving group:", error);
+
+        // Handle specific error messages from the API
+        let errorMessage = "Failed to leave group. Please try again.";
+
+        if (error.response?.data?.detail) {
+          const apiError = error.response.data.detail;
+
+          // Check for creator restriction error
+          if (
+            apiError.includes("creator cannot leave") ||
+            apiError.includes("other members")
+          ) {
+            errorMessage =
+              "As the group creator, you cannot leave while there are other members in the group. Please transfer ownership or wait for other members to leave first.";
+          } else {
+            errorMessage = apiError;
+          }
+        }
+
+        // Show error toast instead of setting error state
+        showError(errorMessage);
+      } finally {
+        setActionLoading(prev => ({ ...prev, [groupId]: null }));
+      }
+    },
+    [fetchGroups, showSuccess, showError]
+  );
 
   const GroupCard = ({ group, showJoinButton = false }) => (
     <Card className="h-full shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100 bg-white hover:bg-gray-50 hover:border-blue-200">
@@ -223,10 +277,15 @@ const Groups = () => {
               <Button
                 onClick={() => handleJoinGroup(group.id)}
                 size="sm"
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+                disabled={actionLoading[group.id] === "joining"}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50"
               >
-                <UserPlus className="h-3 w-3 mr-1" />
-                Join
+                {actionLoading[group.id] === "joining" ? (
+                  <LoadingSpinner size="sm" className="mr-1" />
+                ) : (
+                  <UserPlus className="h-3 w-3 mr-1" />
+                )}
+                {actionLoading[group.id] === "joining" ? "Joining..." : "Join"}
               </Button>
             )}
             {group.is_member && showJoinButton && (
@@ -234,10 +293,15 @@ const Groups = () => {
                 onClick={() => handleLeaveGroup(group.id)}
                 variant="outline"
                 size="sm"
-                className="border-red-300 text-red-600 hover:bg-red-50"
+                disabled={actionLoading[group.id] === "leaving"}
+                className="border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
               >
-                <UserMinus className="h-3 w-3 mr-1" />
-                Leave
+                {actionLoading[group.id] === "leaving" ? (
+                  <LoadingSpinner size="sm" className="mr-1" />
+                ) : (
+                  <UserMinus className="h-3 w-3 mr-1" />
+                )}
+                {actionLoading[group.id] === "leaving" ? "Leaving..." : "Leave"}
               </Button>
             )}
           </div>
@@ -261,12 +325,17 @@ const Groups = () => {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <div className="text-lg font-medium text-gray-700">
-              Loading your groups...
-            </div>
-          </div>
+          <LoadingSpinner size="xl">Loading your groups...</LoadingSpinner>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto mt-8">
+          <ErrorMessage type="error" message={error} onRetry={fetchGroups} />
         </div>
       </Layout>
     );
@@ -325,6 +394,16 @@ const Groups = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
         </div>
+
+        {/* Error Display */}
+        {error && !loading && (
+          <ErrorMessage
+            type="error"
+            message={error}
+            onRetry={fetchGroups}
+            className="mb-4"
+          />
+        )}
 
         {/* Action Bar */}
         <Card className="shadow-xl bg-gradient-to-r from-blue-50 to-orange-50 border-0">

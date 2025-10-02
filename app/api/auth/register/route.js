@@ -1,35 +1,38 @@
-import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/src/lib/appwrite-server';
-import { ID } from 'node-appwrite';
-import { DATABASE_ID, COLLECTIONS } from '@/src/lib/appwrite-config';
+import { NextResponse } from "next/server";
+import { Client, Users, Databases, ID } from "node-appwrite";
 
 export async function POST(request) {
   try {
-    const { name, email, password, subjects_of_interest } = await request.json();
+    const { name, email, password, subjects_of_interest } =
+      await request.json();
 
     // Validation
     if (!name || !name.trim()) {
-      return NextResponse.json(
-        { detail: 'Name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ detail: "Name is required" }, { status: 400 });
     }
 
     if (!email || !email.trim()) {
       return NextResponse.json(
-        { detail: 'Valid email is required' },
+        { detail: "Valid email is required" },
         { status: 400 }
       );
     }
 
     if (!password || password.length < 8) {
       return NextResponse.json(
-        { detail: 'Password must be at least 8 characters long' },
+        { detail: "Password must be at least 8 characters long" },
         { status: 400 }
       );
     }
 
-    const { users, databases } = createAdminClient();
+    // Create admin client
+    const client = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+      .setKey(process.env.APPWRITE_API_KEY);
+
+    const users = new Users(client);
+    const databases = new Databases(client);
 
     // Create user account in Appwrite
     try {
@@ -43,8 +46,8 @@ export async function POST(request) {
 
       // Create user profile document in database
       await databases.createDocument(
-        DATABASE_ID,
-        COLLECTIONS.USER_PROFILES,
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
         user.$id,
         {
           userId: user.$id,
@@ -56,22 +59,22 @@ export async function POST(request) {
       );
 
       return NextResponse.json({
-        message: 'User registered successfully',
+        message: "User registered successfully",
         userId: user.$id,
       });
     } catch (error) {
       if (error.code === 409) {
         return NextResponse.json(
-          { detail: 'Email already registered' },
+          { detail: "Email already registered" },
           { status: 400 }
         );
       }
       throw error;
     }
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error("Registration error:", error);
     return NextResponse.json(
-      { detail: error.message || 'Internal server error' },
+      { detail: error.message || "Internal server error" },
       { status: 500 }
     );
   }
