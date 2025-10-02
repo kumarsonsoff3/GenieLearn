@@ -178,6 +178,22 @@ Visit http://localhost:3000 and test the registration/login!
 
 ## Troubleshooting
 
+### "required option '--database-id <database-id>' not specified"
+This error occurs if you're using an older or newer version of Appwrite CLI with different syntax.
+
+**Solution**: Make sure you're using Appwrite CLI version 4.x or later. Update it:
+```bash
+npm uninstall -g appwrite-cli
+npm install -g appwrite-cli
+```
+
+Then verify the version:
+```bash
+appwrite --version
+```
+
+The scripts use kebab-case parameters (`--database-id`, `--project-id`, etc.) which are required in newer versions.
+
 ### "appwrite command not found"
 Install Appwrite CLI:
 ```bash
@@ -190,11 +206,15 @@ Login to Appwrite:
 appwrite login
 ```
 
+This will open your browser. After authentication, a session file is created in `~/.appwrite/` directory.
+
 ### "Project not found"
-Make sure you're using the correct Project ID from Appwrite Console.
+Make sure you're using the correct Project ID from Appwrite Console → Settings.
+
+Example: `6789abcd1234efgh5678`
 
 ### "Collection already exists"
-The script handles this gracefully. Existing collections won't be modified.
+The script handles this gracefully. Existing collections won't be modified. You'll see a warning message but the script continues.
 
 ### "Permission denied" on bash script
 Make the script executable:
@@ -206,6 +226,15 @@ chmod +x appwrite-setup.sh
 - Check if you're logged into the correct Appwrite account
 - Verify the Project ID is correct
 - Check Appwrite Console to see if resources were created
+- Check the script output for any error messages
+
+### Windows-specific issues
+On Windows, use the Node.js version which is more reliable:
+```bash
+node appwrite-setup.js your-project-id
+```
+
+PowerShell may have issues with the bash script.
 
 ## Manual Verification
 
