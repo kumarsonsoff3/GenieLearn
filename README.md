@@ -70,11 +70,21 @@ cp .env.example .env.local
 
 ### Appwrite Setup
 
-Follow the detailed guide in [APPWRITE_SETUP.md](APPWRITE_SETUP.md) to:
-- Create Appwrite project
-- Create database and collections
-- Generate API key
-- Configure permissions
+**Quick Setup (Recommended):**
+```bash
+# Install Appwrite CLI
+npm install -g appwrite-cli
+
+# Login to Appwrite
+appwrite login
+
+# Run automated setup script
+node appwrite-setup.js your-project-id-here
+```
+
+This automated script will create all databases, collections, attributes, and indexes for you!
+
+For manual setup or troubleshooting, see [APPWRITE_SETUP.md](APPWRITE_SETUP.md) and [SETUP_SCRIPTS_README.md](SETUP_SCRIPTS_README.md).
 
 ### Environment Variables
 

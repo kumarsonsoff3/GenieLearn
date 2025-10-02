@@ -60,7 +60,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup:appwrite": "node appwrite-setup.js"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",

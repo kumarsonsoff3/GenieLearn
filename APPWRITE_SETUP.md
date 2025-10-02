@@ -2,6 +2,55 @@
 
 This guide will help you set up Appwrite for the GenieLearn application.
 
+## Quick Setup (Automated) ⚡
+
+We provide automated setup scripts to make the process easier:
+
+### Option 1: Using Bash Script (Linux/Mac)
+
+```bash
+# 1. Install Appwrite CLI
+npm install -g appwrite-cli
+
+# 2. Login to Appwrite
+appwrite login
+
+# 3. Run the setup script with your project ID
+chmod +x appwrite-setup.sh
+./appwrite-setup.sh your-project-id-here
+```
+
+### Option 2: Using Node.js Script (Cross-platform)
+
+```bash
+# 1. Install Appwrite CLI
+npm install -g appwrite-cli
+
+# 2. Login to Appwrite
+appwrite login
+
+# 3. Run the setup script with your project ID
+node appwrite-setup.js your-project-id-here
+```
+
+The scripts will automatically:
+- Create the database
+- Create all collections (user_profiles, groups, messages)
+- Set up all attributes with correct types and sizes
+- Create all indexes
+- Create storage bucket
+- Configure permissions
+
+After running the script, you only need to:
+1. Create an API key in Appwrite Console
+2. Update your `.env.local` file with the credentials
+
+---
+
+## Manual Setup (Alternative)
+
+If you prefer to set up manually or the automated script doesn't work, follow these steps:
+
 ## Prerequisites
 
 - An Appwrite Cloud account or self-hosted Appwrite instance
