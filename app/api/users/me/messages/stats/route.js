@@ -57,8 +57,10 @@ export async function GET() {
     );
 
     const stats = {
-      total_messages: messageCount,
-      groups_joined: userGroups.length,
+      messagesSent: messageCount,
+      groupsJoined: userGroups.length,
+      total_messages: messageCount, // Keep for backwards compatibility
+      groups_joined: userGroups.length, // Keep for backwards compatibility
       active_conversations: userGroups.length, // Simplified metric
     };
 

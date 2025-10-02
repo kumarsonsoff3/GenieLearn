@@ -37,15 +37,16 @@ import {
   UserPlus,
 } from "lucide-react";
 import api from "../utils/enhancedApi";
+import useStats from "../hooks/useStats";
 
 const Dashboard = React.memo(() => {
   const dispatch = useDispatch();
   const { user, loading, isAuthenticated, isInitializing } = useSelector(
     state => state.auth
   );
-  const [userStats, setUserStats] = useState({
-    groupsJoined: 0,
-    messagesSent: 0,
+  const { stats: userStats, loading: statsLoading, refreshStats, isStale } = useStats();
+  
+  const [additionalStats, setAdditionalStats] = useState({
     learningHours: 0,
     tasksCompleted: 0,
   });
@@ -57,26 +58,12 @@ const Dashboard = React.memo(() => {
     }
   }, [dispatch, user, isAuthenticated, loading, isInitializing]);
 
-  const fetchUserStats = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      // Fetch user's groups from new API
-      const myGroupsResponse = await api.get("/groups/my-groups");
-
-      setUserStats(prevStats => ({
-        ...prevStats,
-        groupsJoined: myGroupsResponse.data.length,
-        messagesSent: 0, // Will be calculated from messages
-      }));
-    } catch (error) {
-      console.error("Error fetching user stats:", error);
-    }
-  }, [user]);
-
+  // Auto-refresh stats if they are stale
   useEffect(() => {
-    fetchUserStats();
-  }, [fetchUserStats]);
+    if (user?.id && isStale && !statsLoading && !loading && !isInitializing) {
+      refreshStats();
+    }
+  }, [user?.id, isStale, statsLoading, refreshStats, loading, isInitializing]);
 
   const userInitial = useMemo(
     () => user?.name?.charAt(0).toUpperCase() || "U",
@@ -159,7 +146,7 @@ const Dashboard = React.memo(() => {
                       Groups Joined
                     </p>
                     <p className="text-3xl font-bold text-blue-700">
-                      {userStats.groupsJoined}
+                      {statsLoading || !user ? "..." : userStats.groupsJoined}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -189,7 +176,7 @@ const Dashboard = React.memo(() => {
                     Messages Sent
                   </p>
                   <p className="text-3xl font-bold text-orange-700">
-                    {userStats.messagesSent}
+                    {statsLoading || !user ? "..." : userStats.messagesSent}
                   </p>
                 </div>
                 <MessageCircle className="h-8 w-8 text-orange-500" />
@@ -213,7 +200,7 @@ const Dashboard = React.memo(() => {
                     Learning Hours
                   </p>
                   <p className="text-3xl font-bold text-green-700">
-                    {userStats.learningHours}
+                    {additionalStats.learningHours}
                   </p>
                 </div>
                 <Clock className="h-8 w-8 text-green-500" />
@@ -233,7 +220,7 @@ const Dashboard = React.memo(() => {
                     Achievements
                   </p>
                   <p className="text-3xl font-bold text-orange-700">
-                    {userStats.tasksCompleted}
+                    {additionalStats.tasksCompleted}
                   </p>
                 </div>
                 <Award className="h-8 w-8 text-orange-500" />

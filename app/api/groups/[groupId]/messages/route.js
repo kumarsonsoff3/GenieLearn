@@ -28,6 +28,7 @@ export async function GET(request, { params }) {
     const { groupId } = await params;
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "50");
+    const offset = parseInt(searchParams.get("offset") || "0");
 
     // Create admin client for secure operations
     const adminClient = new Client()
@@ -64,6 +65,7 @@ export async function GET(request, { params }) {
         Query.equal("group_id", groupId),
         Query.orderAsc("timestamp"),
         Query.limit(limit),
+        Query.offset(offset),
       ]
     );
 

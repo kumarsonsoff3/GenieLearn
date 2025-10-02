@@ -16,12 +16,15 @@ import { Send, ArrowLeft, Users, Crown } from "lucide-react";
 import api from "../utils/enhancedApi";
 import { createRealtimeClient } from "../lib/appwrite";
 import { DATABASE_ID, COLLECTIONS } from "../lib/appwrite-config";
+import useStats from "../hooks/useStats";
 
 const GroupChat = ({ group, onBack }) => {
   const { user } = useSelector(state => state.auth);
+  const { incrementMessageCount } = useStats();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const unsubscribeRef = useRef(null);
@@ -35,6 +38,62 @@ const GroupChat = ({ group, onBack }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const loadMessageHistory = useCallback(async () => {
+    try {
+      setLoadingMessages(true);
+      let allMessages = [];
+      let offset = 0;
+      const batchSize = 100;
+      let hasMore = true;
+
+      // Load messages in batches to get complete chat history
+      while (hasMore) {
+        const response = await api.get(`/groups/${group.id}/messages?limit=${batchSize}&offset=${offset}`);
+        const batch = response.data;
+        
+        if (batch.length === 0 || batch.length < batchSize) {
+          // No more messages or last batch
+          allMessages.push(...batch);
+          hasMore = false;
+        } else {
+          allMessages.push(...batch);
+          offset += batchSize;
+          
+          // Safety check to prevent infinite loops (max 5,000 messages)
+          if (allMessages.length >= 5000) {
+            console.warn("Reached maximum message limit (5,000) for performance");
+            hasMore = false;
+          }
+        }
+      }
+
+      const formattedMessages = allMessages.map(msg => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+      }));
+      
+      // Messages are already sorted by timestamp from API (Query.orderAsc)
+      setMessages(formattedMessages);
+      console.log(`Loaded ${formattedMessages.length} messages for group ${group.name}`);
+    } catch (error) {
+      console.error("Error loading message history:", error);
+      // Fallback: try to load with simple limit if pagination fails
+      try {
+        const response = await api.get(`/groups/${group.id}/messages?limit=1000`);
+        const formattedMessages = response.data.map(msg => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }));
+        setMessages(formattedMessages);
+        console.log(`Loaded ${formattedMessages.length} messages (fallback) for group ${group.name}`);
+      } catch (fallbackError) {
+        console.error("Fallback message loading also failed:", fallbackError);
+      }
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, [group.id, group.name]);
 
   // Helper function to handle real-time message updates
   const handleRealtimeMessage = useCallback(
@@ -140,20 +199,7 @@ const GroupChat = ({ group, onBack }) => {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [group.id, user, handleRealtimeMessage]);
-
-  const loadMessageHistory = useCallback(async () => {
-    try {
-      const response = await api.get(`/groups/${group.id}/messages`);
-      const formattedMessages = response.data.map(msg => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-      }));
-      setMessages(formattedMessages);
-    } catch (error) {
-      console.error("Error loading message history:", error);
-    }
-  }, [group.id]);
+  }, [group.id, user, handleRealtimeMessage, loadMessageHistory]);
 
   // Load message history when component mounts
   useEffect(() => {
@@ -204,6 +250,9 @@ const GroupChat = ({ group, onBack }) => {
             : msg
         )
       );
+
+      // Increment message count for stats
+      incrementMessageCount();
     } catch (error) {
       console.error("Error sending message:", error);
 
@@ -326,7 +375,17 @@ const GroupChat = ({ group, onBack }) => {
 
       {/* Messages Area */}
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-        {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+        {loadingMessages ? (
+          <div className="flex items-center justify-center py-8 text-gray-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+            Loading chat history...
+          </div>
+        ) : Object.entries(groupedMessages).length === 0 ? (
+          <div className="flex items-center justify-center py-8 text-gray-500">
+            No messages yet. Start the conversation!
+          </div>
+        ) : (
+          Object.entries(groupedMessages).map(([date, dateMessages]) => (
           <div key={date}>
             {/* Date separator */}
             <div className="flex items-center justify-center my-4">
@@ -437,7 +496,8 @@ const GroupChat = ({ group, onBack }) => {
               );
             })}
           </div>
-        ))}
+          ))
+        )}
         <div ref={messagesEndRef} />
       </CardContent>
 

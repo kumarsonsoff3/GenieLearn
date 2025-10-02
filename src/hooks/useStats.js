@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
+import { useSelector } from "react-redux";
 import useApi from "./useApi";
-import useAuth from "./useAuth";
 
 /**
  * Custom hook for fetching and managing user statistics
  * @returns {object} Statistics state and methods
  */
 const useStats = () => {
-  const { user } = useAuth();
+  const { user } = useSelector(state => state.auth);
   const { get, loading, error } = useApi();
   const [stats, setStats] = useState({
     groupsJoined: 0,
@@ -18,39 +18,42 @@ const useStats = () => {
 
   // Fetch user statistics
   const fetchStats = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log("No user ID available for stats fetch");
+      return;
+    }
 
     try {
       setIsRefreshing(true);
+      console.log("Fetching stats for user:", user.id);
 
       // Fetch groups and messages in parallel
       const [groupsData, messagesData] = await Promise.all([
-        get("groups"),
+        get("groups/my-groups"),
         get("users/me/messages/stats"),
       ]);
 
-      // Filter groups where user is a member
-      const userGroups = groupsData.filter(group =>
-        group.members.includes(user.id)
-      );
+      const newStats = {
+        groupsJoined: Array.isArray(groupsData) ? groupsData.length : 0,
+        messagesSent: messagesData?.messagesSent || messagesData?.total_messages || 0,
+      };
 
-      setStats({
-        groupsJoined: userGroups.length,
-        messagesSent: messagesData.messagesSent || 0,
-      });
-
+      console.log("Stats updated:", newStats);
+      setStats(newStats);
       setLastFetch(new Date());
     } catch (error) {
       console.error("Error fetching user stats:", error);
-      // Set default values on error
-      setStats({
-        groupsJoined: 0,
-        messagesSent: 0,
-      });
+      // Keep existing stats on error, don't reset to 0
+      if (!lastFetch) {
+        setStats({
+          groupsJoined: 0,
+          messagesSent: 0,
+        });
+      }
     } finally {
       setIsRefreshing(false);
     }
-  }, [user?.id, get]);
+  }, [user?.id, get, lastFetch]);
 
   // Auto-fetch stats when user is available
   useEffect(() => {
