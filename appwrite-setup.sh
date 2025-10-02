@@ -45,11 +45,19 @@ if ! command -v appwrite &> /dev/null; then
     exit 1
 fi
 
+# Set project context
+echo -e "${BLUE}Setting project context...${NC}"
+appwrite client set-project "$PROJECT_ID" || {
+    echo -e "${RED}Failed to set project context. Make sure you are logged in with: appwrite login${NC}"
+    exit 1
+}
+echo -e "${GREEN}✓ Project context set${NC}"
+echo ""
+
 echo -e "${BLUE}Step 1: Creating Database...${NC}"
 appwrite databases create \
     --database-id "$DATABASE_ID" \
     --name "GenieLearn Database" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || echo -e "${YELLOW}Database might already exist, continuing...${NC}"
 
 echo -e "${GREEN}✓ Database created/verified${NC}"
@@ -57,86 +65,78 @@ echo ""
 
 # Collection 1: user_profiles
 echo -e "${BLUE}Step 2: Creating 'user_profiles' collection...${NC}"
-appwrite databases createCollection \
+appwrite databases create-collection \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --name "User Profiles" \
-    --project-id "$PROJECT_ID" \
     --permissions 'read("any")' 'create("users")' 'update("users")' \
     2>/dev/null || echo -e "${YELLOW}Collection might already exist, continuing...${NC}"
 
 echo -e "${BLUE}Creating attributes for user_profiles...${NC}"
 
 # userId attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --key "userId" \
     --size 36 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # name attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --key "name" \
     --size 100 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # email attribute
-appwrite databases createEmailAttribute \
+appwrite databases create-email-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --key "email" \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # subjects_of_interest attribute (array)
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --key "subjects_of_interest" \
     --size 50 \
     --required false \
     --array true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # created_at attribute
-appwrite databases createDatetimeAttribute \
+appwrite databases create-datetime-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --key "created_at" \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 echo -e "${BLUE}Creating indexes for user_profiles...${NC}"
 sleep 2  # Wait for attributes to be created
 
 # userId index
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --key "userId_idx" \
     --type "key" \
     --attributes "userId" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # email index (unique)
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "user_profiles" \
     --key "email_idx" \
     --type "unique" \
     --attributes "email" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 echo -e "${GREEN}✓ user_profiles collection created${NC}"
@@ -144,107 +144,97 @@ echo ""
 
 # Collection 2: groups
 echo -e "${BLUE}Step 3: Creating 'groups' collection...${NC}"
-appwrite databases createCollection \
+appwrite databases create-collection \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --name "Groups" \
-    --project-id "$PROJECT_ID" \
-    --permissions 'read("users")' 'create("any")' \
+    --permissions 'read("any")' 'create("users")' \
     2>/dev/null || echo -e "${YELLOW}Collection might already exist, continuing...${NC}"
 
 echo -e "${BLUE}Creating attributes for groups...${NC}"
 
 # name attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "name" \
     --size 100 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # description attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "description" \
     --size 500 \
     --required false \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # is_public attribute
-appwrite databases createBooleanAttribute \
+appwrite databases create-boolean-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "is_public" \
     --required true \
     --default true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # creator_id attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "creator_id" \
     --size 36 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # members attribute (array)
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "members" \
     --size 36 \
     --required true \
     --array true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # created_at attribute
-appwrite databases createDatetimeAttribute \
+appwrite databases create-datetime-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "created_at" \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 echo -e "${BLUE}Creating indexes for groups...${NC}"
 sleep 2  # Wait for attributes to be created
 
 # creator_id index
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "creator_idx" \
     --type "key" \
     --attributes "creator_id" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # is_public index
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "public_idx" \
     --type "key" \
     --attributes "is_public" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # created_at index
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "groups" \
     --key "created_idx" \
     --type "key" \
     --attributes "created_at" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 echo -e "${GREEN}✓ groups collection created${NC}"
@@ -252,96 +242,87 @@ echo ""
 
 # Collection 3: messages
 echo -e "${BLUE}Step 4: Creating 'messages' collection...${NC}"
-appwrite databases createCollection \
+appwrite databases create-collection \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --name "Messages" \
-    --project-id "$PROJECT_ID" \
-    --permissions 'read("users")' 'create("users")' \
+    --permissions 'read("any")' 'create("users")' \
     2>/dev/null || echo -e "${YELLOW}Collection might already exist, continuing...${NC}"
 
 echo -e "${BLUE}Creating attributes for messages...${NC}"
 
 # content attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "content" \
     --size 1000 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # group_id attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "group_id" \
     --size 36 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # sender_id attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "sender_id" \
     --size 36 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # sender_name attribute
-appwrite databases createStringAttribute \
+appwrite databases create-string-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "sender_name" \
     --size 100 \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # timestamp attribute
-appwrite databases createDatetimeAttribute \
+appwrite databases create-datetime-attribute \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "timestamp" \
     --required true \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 echo -e "${BLUE}Creating indexes for messages...${NC}"
 sleep 2  # Wait for attributes to be created
 
 # group_id index
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "group_idx" \
     --type "key" \
     --attributes "group_id" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # sender_id index
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "sender_idx" \
     --type "key" \
     --attributes "sender_id" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 # timestamp index
-appwrite databases createIndex \
+appwrite databases create-index \
     --database-id "$DATABASE_ID" \
     --collection-id "messages" \
     --key "timestamp_idx" \
     --type "key" \
     --attributes "timestamp" \
-    --project-id "$PROJECT_ID" \
     2>/dev/null || true
 
 echo -e "${GREEN}✓ messages collection created${NC}"
@@ -349,11 +330,10 @@ echo ""
 
 # Storage Bucket
 echo -e "${BLUE}Step 5: Creating storage bucket...${NC}"
-appwrite storage createBucket \
+appwrite storage create-bucket \
     --bucket-id "files" \
     --name "GenieLearn Files" \
-    --project-id "$PROJECT_ID" \
-    --permissions 'read("users")' 'create("users")' 'update("users")' 'delete("users")' \
+    --permissions 'read("any")' 'create("users")' 'update("users")' 'delete("users")' \
     2>/dev/null || echo -e "${YELLOW}Bucket might already exist, continuing...${NC}"
 
 echo -e "${GREEN}✓ Storage bucket created${NC}"

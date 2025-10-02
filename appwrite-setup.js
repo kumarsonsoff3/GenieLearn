@@ -78,11 +78,22 @@ async function main() {
     process.exit(1);
   }
 
+  // Set the project ID globally for all commands
+  log.info('Setting project context...');
+  try {
+    execSync(`appwrite client set-project ${PROJECT_ID}`, { stdio: 'ignore' });
+    log.success('✓ Project context set');
+    console.log('');
+  } catch {
+    log.error('Failed to set project context. Make sure you are logged in with: appwrite login');
+    process.exit(1);
+  }
+
   try {
     // Step 1: Create Database
     log.info('Step 1: Creating Database...');
     runCommand(
-      `appwrite databases create --database-id "${DATABASE_ID}" --name "GenieLearn Database" --project-id "${PROJECT_ID}"`,
+      `appwrite databases create --database-id "${DATABASE_ID}" --name "GenieLearn Database"`,
       true
     );
     log.success('✓ Database created/verified');
@@ -91,21 +102,21 @@ async function main() {
     // Step 2: Create user_profiles collection
     log.info('Step 2: Creating \'user_profiles\' collection...');
     runCommand(
-      `appwrite databases createCollection --database-id "${DATABASE_ID}" --collection-id "user_profiles" --name "User Profiles" --project-id "${PROJECT_ID}" --permissions 'read("users")' 'create("any")' 'update("users")'`,
+      `appwrite databases create-collection --database-id "${DATABASE_ID}" --collection-id "user_profiles" --name "User Profiles" --permissions 'read("any")' 'create("users")' 'update("users")'`,
       true
     );
 
     log.info('Creating attributes for user_profiles...');
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "userId" --size 36 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "name" --size 100 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createEmailAttribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "email" --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "subjects_of_interest" --size 50 --required false --array true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createDatetimeAttribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "created_at" --required true --project-id "${PROJECT_ID}"`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "userId" --size 36 --required true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "name" --size 100 --required true`, true);
+    runCommand(`appwrite databases create-email-attribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "email" --required true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "subjects_of_interest" --size 50 --required false --array true`, true);
+    runCommand(`appwrite databases create-datetime-attribute --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "created_at" --required true`, true);
 
     log.info('Creating indexes for user_profiles...');
     await wait(2000); // Wait for attributes
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "userId_idx" --type "key" --attributes "userId" --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "email_idx" --type "unique" --attributes "email" --project-id "${PROJECT_ID}"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "userId_idx" --type "key" --attributes "userId"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "user_profiles" --key "email_idx" --type "unique" --attributes "email"`, true);
 
     log.success('✓ user_profiles collection created');
     console.log('');
@@ -113,23 +124,23 @@ async function main() {
     // Step 3: Create groups collection
     log.info('Step 3: Creating \'groups\' collection...');
     runCommand(
-      `appwrite databases createCollection --database-id "${DATABASE_ID}" --collection-id "groups" --name "Groups" --project-id "${PROJECT_ID}" --permissions 'read("users")' 'create("any")'`,
+      `appwrite databases create-collection --database-id "${DATABASE_ID}" --collection-id "groups" --name "Groups" --permissions 'read("any")' 'create("users")'`,
       true
     );
 
     log.info('Creating attributes for groups...');
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "name" --size 100 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "description" --size 500 --required false --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createBooleanAttribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "is_public" --required true --default true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "creator_id" --size 36 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "members" --size 36 --required true --array true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createDatetimeAttribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "created_at" --required true --project-id "${PROJECT_ID}"`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "name" --size 100 --required true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "description" --size 500 --required false`, true);
+    runCommand(`appwrite databases create-boolean-attribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "is_public" --required true --default true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "creator_id" --size 36 --required true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "members" --size 36 --required true --array true`, true);
+    runCommand(`appwrite databases create-datetime-attribute --database-id "${DATABASE_ID}" --collection-id "groups" --key "created_at" --required true`, true);
 
     log.info('Creating indexes for groups...');
     await wait(2000);
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "groups" --key "creator_idx" --type "key" --attributes "creator_id" --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "groups" --key "public_idx" --type "key" --attributes "is_public" --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "groups" --key "created_idx" --type "key" --attributes "created_at" --project-id "${PROJECT_ID}"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "groups" --key "creator_idx" --type "key" --attributes "creator_id"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "groups" --key "public_idx" --type "key" --attributes "is_public"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "groups" --key "created_idx" --type "key" --attributes "created_at"`, true);
 
     log.success('✓ groups collection created');
     console.log('');
@@ -137,22 +148,22 @@ async function main() {
     // Step 4: Create messages collection
     log.info('Step 4: Creating \'messages\' collection...');
     runCommand(
-      `appwrite databases createCollection --database-id "${DATABASE_ID}" --collection-id "messages" --name "Messages" --project-id "${PROJECT_ID}" --permissions 'read("users")' 'create("users")'`,
+      `appwrite databases create-collection --database-id "${DATABASE_ID}" --collection-id "messages" --name "Messages" --permissions 'read("any")' 'create("users")'`,
       true
     );
 
     log.info('Creating attributes for messages...');
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "content" --size 1000 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "group_id" --size 36 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "sender_id" --size 36 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createStringAttribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "sender_name" --size 100 --required true --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createDatetimeAttribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "timestamp" --required true --project-id "${PROJECT_ID}"`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "content" --size 1000 --required true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "group_id" --size 36 --required true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "sender_id" --size 36 --required true`, true);
+    runCommand(`appwrite databases create-string-attribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "sender_name" --size 100 --required true`, true);
+    runCommand(`appwrite databases create-datetime-attribute --database-id "${DATABASE_ID}" --collection-id "messages" --key "timestamp" --required true`, true);
 
     log.info('Creating indexes for messages...');
     await wait(2000);
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "messages" --key "group_idx" --type "key" --attributes "group_id" --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "messages" --key "sender_idx" --type "key" --attributes "sender_id" --project-id "${PROJECT_ID}"`, true);
-    runCommand(`appwrite databases createIndex --database-id "${DATABASE_ID}" --collection-id "messages" --key "timestamp_idx" --type "key" --attributes "timestamp" --project-id "${PROJECT_ID}"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "messages" --key "group_idx" --type "key" --attributes "group_id"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "messages" --key "sender_idx" --type "key" --attributes "sender_id"`, true);
+    runCommand(`appwrite databases create-index --database-id "${DATABASE_ID}" --collection-id "messages" --key "timestamp_idx" --type "key" --attributes "timestamp"`, true);
 
     log.success('✓ messages collection created');
     console.log('');
@@ -160,7 +171,7 @@ async function main() {
     // Step 5: Create storage bucket
     log.info('Step 5: Creating storage bucket...');
     runCommand(
-      `appwrite storage createBucket --bucket-id "files" --name "GenieLearn Files" --project-id "${PROJECT_ID}" --permissions 'read("users")' 'create("users")' 'update("users")' 'delete("users")'`,
+      `appwrite storage create-bucket --bucket-id "files" --name "GenieLearn Files" --permissions 'read("any")' 'create("users")' 'update("users")' 'delete("users")'`,
       true
     );
     log.success('✓ Storage bucket created');

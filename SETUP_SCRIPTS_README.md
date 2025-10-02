@@ -178,21 +178,56 @@ Visit http://localhost:3000 and test the registration/login!
 
 ## Troubleshooting
 
+### "unknown option '--project-id'" or "unknown command 'createCollection'"
+
+This means the scripts are using the correct modern syntax, but you might be seeing different errors. The latest scripts use:
+- Kebab-case commands (e.g., `create-collection` instead of `createCollection`)
+- Project context setting via `appwrite client set-project` instead of `--project-id` flag on each command
+
+**Solution:**
+
+1. **Update Appwrite CLI to the latest version:**
+   ```bash
+   npm uninstall -g appwrite-cli
+   npm install -g appwrite-cli
+   ```
+
+2. **Verify you're logged in:**
+   ```bash
+   appwrite login
+   ```
+
+3. **The scripts automatically set project context** when you pass the project ID as an argument.
+
+### "Failed to set project context" or "Not logged in"
+
+**Solutions:**
+
+1. Make sure you're logged in to Appwrite:
+   ```bash
+   appwrite login
+   ```
+   This will open your browser for authentication.
+
+2. Verify your project ID is correct:
+   - Go to Appwrite Console
+   - Click on your project
+   - Go to Settings
+   - Copy the exact Project ID
+
+3. If using self-hosted Appwrite, set the endpoint first:
+   ```bash
+   appwrite client set-endpoint https://your-appwrite-instance.com/v1
+   ```
+
 ### "required option '--database-id <database-id>' not specified"
-This error occurs if you're using an older or newer version of Appwrite CLI with different syntax.
 
-**Solution**: Make sure you're using Appwrite CLI version 4.x or later. Update it:
-```bash
-npm uninstall -g appwrite-cli
-npm install -g appwrite-cli
-```
+This error occurred in older versions of the scripts. The latest version (which you should have now) fixes this by:
+- Using kebab-case parameters (`--database-id` not `--databaseId`)
+- Setting project context once at the start
+- Not using `--project-id` flag on individual commands
 
-Then verify the version:
-```bash
-appwrite --version
-```
-
-The scripts use kebab-case parameters (`--database-id`, `--project-id`, etc.) which are required in newer versions.
+Make sure you have the latest version of the scripts from the repository.
 
 ### "appwrite command not found"
 Install Appwrite CLI:
