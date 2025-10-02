@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -32,6 +32,7 @@ const Register = () => {
   });
 
   const [validationError, setValidationError] = useState("");
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -50,11 +51,18 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear validation errors when user starts typing
     setValidationError("");
+    setRegistrationSuccess(false);
+    // Clear Redux errors too
+    if (error) {
+      dispatch(clearError());
+    }
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    setRegistrationSuccess(false);
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
@@ -62,8 +70,8 @@ const Register = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setValidationError("Password must be at least 6 characters long");
+    if (formData.password.length < 8) {
+      setValidationError("Password must be at least 8 characters long");
       return;
     }
 
@@ -80,7 +88,37 @@ const Register = () => {
         : [],
     };
 
-    dispatch(registerUser(submitData));
+    try {
+      console.log("Submitting registration data:", {
+        ...submitData,
+        password: "[HIDDEN]",
+      });
+      const result = await dispatch(registerUser(submitData));
+
+      console.log("Registration result:", result);
+
+      if (registerUser.fulfilled.match(result)) {
+        console.log("Registration successful!");
+        setRegistrationSuccess(true);
+        // Clear form data
+        setFormData({
+          name: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          subjects_of_interest: "",
+        });
+
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          router.push("/login?registered=true");
+        }, 2000);
+      } else if (registerUser.rejected.match(result)) {
+        console.log("Registration failed:", result.payload);
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+    }
   };
 
   return (
@@ -111,7 +149,15 @@ const Register = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(error || validationError) && (
+            {registrationSuccess && (
+              <Alert className="mb-4" variant="default">
+                <AlertDescription className="text-green-700">
+                  ✅ Account created successfully! Redirecting to login...
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {(error || validationError) && !registrationSuccess && (
               <Alert className="mb-4" variant="destructive">
                 <AlertDescription>{error || validationError}</AlertDescription>
               </Alert>
@@ -155,9 +201,12 @@ const Register = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Enter your password"
+                  placeholder="Enter your password (min. 8 characters)"
                   className="mt-1"
                 />
+                <p className="text-sm text-gray-500 mt-1">
+                  Must be at least 8 characters long
+                </p>
               </div>
 
               <div>
@@ -195,9 +244,14 @@ const Register = () => {
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white font-semibold py-2.5 transition-all duration-200"
-                disabled={loading}
+                disabled={loading || registrationSuccess}
               >
-                {loading ? (
+                {registrationSuccess ? (
+                  <>
+                    <span className="mr-2">✅</span>
+                    Account Created! Redirecting...
+                  </>
+                ) : loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creating Account...

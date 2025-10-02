@@ -40,7 +40,9 @@ import api from "../utils/enhancedApi";
 
 const Dashboard = React.memo(() => {
   const dispatch = useDispatch();
-  const { user, loading } = useSelector(state => state.auth);
+  const { user, loading, isAuthenticated, isInitializing } = useSelector(
+    state => state.auth
+  );
   const [userStats, setUserStats] = useState({
     groupsJoined: 0,
     messagesSent: 0,
@@ -49,10 +51,11 @@ const Dashboard = React.memo(() => {
   });
 
   useEffect(() => {
-    if (!user) {
+    // Only fetch user if authenticated but no user data and not already loading or initializing
+    if (isAuthenticated && !user && !loading && !isInitializing) {
       dispatch(getCurrentUser());
     }
-  }, [dispatch, user]);
+  }, [dispatch, user, isAuthenticated, loading, isInitializing]);
 
   const fetchUserStats = useCallback(async () => {
     if (!user) return;

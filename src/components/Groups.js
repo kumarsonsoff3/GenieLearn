@@ -194,7 +194,10 @@ const Groups = () => {
   );
 
   const GroupCard = ({ group, showJoinButton = false }) => (
-    <Card className="h-full shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100 bg-white hover:bg-gray-50 hover:border-blue-200">
+    <Card
+      className="h-full shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100 bg-white hover:bg-gray-50 hover:border-blue-200 overflow-visible"
+      style={{ position: "relative" }}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
@@ -247,7 +250,7 @@ const Groups = () => {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 relative">
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
           {group.description}
         </p>
@@ -271,51 +274,89 @@ const Groups = () => {
 
         <Separator className="mb-4" />
 
-        <div className="flex justify-between items-center">
-          <div className="flex space-x-2">
+        {/* Button actions row - isolated from card hover effects */}
+        <div
+          className="flex justify-between items-center mt-4 pt-2 border-t border-gray-100"
+          style={{ position: "relative", zIndex: 50 }}
+        >
+          {/* Action buttons container */}
+          <div
+            className="flex space-x-3"
+            style={{ position: "relative", zIndex: 60 }}
+            onMouseDown={e => e.stopPropagation()} // Prevent card hover interference
+          >
             {showJoinButton && !group.is_member && (
-              <Button
-                onClick={() => handleJoinGroup(group.id)}
-                size="sm"
-                disabled={actionLoading[group.id] === "joining"}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50"
-              >
-                {actionLoading[group.id] === "joining" ? (
-                  <LoadingSpinner size="sm" className="mr-1" />
-                ) : (
-                  <UserPlus className="h-3 w-3 mr-1" />
-                )}
-                {actionLoading[group.id] === "joining" ? "Joining..." : "Join"}
-              </Button>
+              <div style={{ isolation: "isolate" }}>
+                <Button
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log(`Joining group: ${group.id}`);
+                    handleJoinGroup(group.id);
+                  }}
+                  size="sm"
+                  disabled={actionLoading[group.id] === "joining"}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50 touch-manipulation"
+                >
+                  {actionLoading[group.id] === "joining" ? (
+                    <LoadingSpinner size="sm" className="mr-1" />
+                  ) : (
+                    <UserPlus className="h-3 w-3 mr-1" />
+                  )}
+                  {actionLoading[group.id] === "joining"
+                    ? "Joining..."
+                    : "Join"}
+                </Button>
+              </div>
             )}
             {group.is_member && showJoinButton && (
-              <Button
-                onClick={() => handleLeaveGroup(group.id)}
-                variant="outline"
-                size="sm"
-                disabled={actionLoading[group.id] === "leaving"}
-                className="border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
-              >
-                {actionLoading[group.id] === "leaving" ? (
-                  <LoadingSpinner size="sm" className="mr-1" />
-                ) : (
-                  <UserMinus className="h-3 w-3 mr-1" />
-                )}
-                {actionLoading[group.id] === "leaving" ? "Leaving..." : "Leave"}
-              </Button>
+              <div style={{ isolation: "isolate" }}>
+                <Button
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log(`Leaving group: ${group.id}`);
+                    handleLeaveGroup(group.id);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  disabled={actionLoading[group.id] === "leaving"}
+                  className="border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50 touch-manipulation"
+                >
+                  {actionLoading[group.id] === "leaving" ? (
+                    <LoadingSpinner size="sm" className="mr-1" />
+                  ) : (
+                    <UserMinus className="h-3 w-3 mr-1" />
+                  )}
+                  {actionLoading[group.id] === "leaving"
+                    ? "Leaving..."
+                    : "Leave"}
+                </Button>
+              </div>
             )}
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedGroup(group)}
-            disabled={!group.is_member}
-            className="border-purple-300 text-purple-600 hover:bg-purple-50 disabled:opacity-50"
+          {/* Chat button container */}
+          <div
+            style={{ isolation: "isolate" }}
+            onMouseDown={e => e.stopPropagation()} // Prevent card hover interference
           >
-            <MessageCircle className="h-3 w-3 mr-1" />
-            Chat
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`Opening chat for group: ${group.id}`);
+                setSelectedGroup(group);
+              }}
+              disabled={!group.is_member}
+              className="border-purple-300 text-purple-600 hover:bg-purple-50 disabled:opacity-50 touch-manipulation"
+            >
+              <MessageCircle className="h-3 w-3 mr-1" />
+              Chat
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

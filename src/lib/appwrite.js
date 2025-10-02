@@ -24,22 +24,18 @@ export const setupClientSession = async () => {
     if (response.ok) {
       const userData = await response.json();
 
-      // Try to get the current session from Appwrite directly
-      try {
-        const currentUser = await account.get();
-        return currentUser;
-      } catch (appwriteError) {
-        // For real-time, we'll use the anonymous client approach
-        return {
-          ...userData,
-          isServerAuthenticated: true,
-          hasAppwriteSession: false,
-        };
-      }
+      // Return server-authenticated user data without calling account.get()
+      // since we use httpOnly cookies that client-side SDK can't access
+      return {
+        ...userData,
+        isServerAuthenticated: true,
+        hasAppwriteSession: false,
+      };
     } else {
       return null;
     }
   } catch (error) {
+    console.log("Session setup failed:", error);
     return null;
   }
 };
@@ -55,6 +51,8 @@ export const createRealtimeClient = () => {
     )
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "");
 
+  // Note: For httpOnly cookie authentication, realtime connections
+  // will use the project's guest permissions or need server-side setup
   return realtimeClient;
 };
 

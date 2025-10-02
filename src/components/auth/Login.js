@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,11 +28,23 @@ const Login = () => {
     password: "",
   });
 
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
+
   useEffect(() => {
     if (isAuthenticated) {
       router.push("/dashboard");
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    // Check if user was redirected from registration
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("registered") === "true") {
+      setShowRegistrationSuccess(true);
+      // Clear the URL parameter
+      window.history.replaceState({}, "", "/login");
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -82,6 +94,15 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {showRegistrationSuccess && (
+              <Alert className="mb-4" variant="default">
+                <AlertDescription className="text-green-700">
+                  🎉 Account created successfully! Please login with your
+                  credentials.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {error && (
               <Alert className="mb-4" variant="destructive">
                 <AlertDescription>{error}</AlertDescription>

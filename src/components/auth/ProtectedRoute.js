@@ -1,41 +1,51 @@
-'use client'
+"use client";
 
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useRouter } from 'next/navigation';
-import { getCurrentUser } from '../../store/authSlice';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 const ProtectedRoute = ({ children }) => {
-  const dispatch = useDispatch();
   const router = useRouter();
-  const { isAuthenticated, loading, token, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading } = useSelector(state => state.auth);
+  const [hasSession, setHasSession] = useState(null); // null = checking, true/false = result
 
   useEffect(() => {
-    // If we have a token but no user data, fetch user info
-    if (token && !user && !loading) {
-      dispatch(getCurrentUser());
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/auth/status");
+        const { hasSession: sessionExists } = await response.json();
+        setHasSession(sessionExists);
+      } catch (error) {
+        console.log("Session check failed:", error);
+        setHasSession(false);
+      }
+    };
+
+    // Only check if we haven't determined session status yet
+    if (hasSession === null) {
+      checkSession();
     }
-  }, [token, user, loading, dispatch]);
+  }, [hasSession]);
 
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!loading && !isAuthenticated) {
-      router.replace('/login');
+    // Only redirect if we're sure there's no authentication and not loading
+    if (!loading && !isAuthenticated && hasSession === false) {
+      router.replace("/login");
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, loading, hasSession, router]);
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  // Show loading while we're checking authentication or session
+  if (loading || hasSession === null || (hasSession && !isAuthenticated)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
       </div>
     );
   }
 
-  // If not authenticated, don't render children (will redirect)
-  if (!isAuthenticated) {
+  // If not authenticated and no session, don't render children (will redirect)
+  if (!isAuthenticated && !hasSession) {
     return null;
   }
 

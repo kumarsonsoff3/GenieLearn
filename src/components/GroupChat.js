@@ -25,6 +25,7 @@ const GroupChat = ({ group, onBack }) => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const unsubscribeRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -94,25 +95,52 @@ const GroupChat = ({ group, onBack }) => {
     [group.id]
   );
 
-  // Setup Appwrite Realtime subscription
+  // Setup Appwrite Realtime subscription with proper error handling
   useEffect(() => {
-    if (!group.id) return;
+    if (!group.id || !user) return; // Only connect if user is authenticated
 
-    const realtimeClient = createRealtimeClient();
-    const unsubscribe = realtimeClient.subscribe(
-      `databases.${DATABASE_ID}.collections.${COLLECTIONS.MESSAGES}.documents`,
-      handleRealtimeMessage
-    );
+    const setupRealtime = async () => {
+      try {
+        // Check if user has server-side authentication first
+        const statusResponse = await fetch("/api/auth/status");
+        const { hasSession } = await statusResponse.json();
 
-    setIsConnected(true);
-    unsubscribeRef.current = unsubscribe;
+        if (!hasSession) {
+          console.log("No server session, skipping realtime connection");
+          setIsConnected(false);
+          return;
+        }
+
+        const realtimeClient = createRealtimeClient();
+        const unsubscribe = realtimeClient.subscribe(
+          `databases.${DATABASE_ID}.collections.${COLLECTIONS.MESSAGES}.documents`,
+          handleRealtimeMessage
+        );
+
+        setIsConnected(true);
+        unsubscribeRef.current = unsubscribe;
+      } catch (error) {
+        console.log("Realtime connection failed:", error);
+        setIsConnected(false);
+
+        // Fall back to polling every 5 seconds
+        pollingIntervalRef.current = setInterval(() => {
+          loadMessageHistory();
+        }, 5000);
+      }
+    };
+
+    setupRealtime();
 
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
       }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
     };
-  }, [group.id, handleRealtimeMessage]);
+  }, [group.id, user, handleRealtimeMessage]);
 
   const loadMessageHistory = useCallback(async () => {
     try {
@@ -200,15 +228,20 @@ const GroupChat = ({ group, onBack }) => {
     }
 
     // Trigger re-subscription after a brief delay
-    setTimeout(() => {
-      const realtimeClient = createRealtimeClient();
-      const unsubscribe = realtimeClient.subscribe(
-        `databases.${DATABASE_ID}.collections.${COLLECTIONS.MESSAGES}.documents`,
-        handleRealtimeMessage
-      );
+    setTimeout(async () => {
+      try {
+        const realtimeClient = createRealtimeClient();
+        const unsubscribe = realtimeClient.subscribe(
+          `databases.${DATABASE_ID}.collections.${COLLECTIONS.MESSAGES}.documents`,
+          handleRealtimeMessage
+        );
 
-      unsubscribeRef.current = unsubscribe;
-      setIsConnected(true);
+        unsubscribeRef.current = unsubscribe;
+        setIsConnected(true);
+      } catch (error) {
+        console.log("Reconnection failed:", error);
+        setIsConnected(false);
+      }
     }, 1000);
   }, [handleRealtimeMessage]);
 

@@ -6,8 +6,9 @@ const API = "/api";
 // Helper to check if user is authenticated (has session cookie)
 const checkAuth = () => {
   if (typeof window !== "undefined") {
-    // Check if session cookie exists
-    return document.cookie.includes("session=");
+    // Check if session cookie exists and is not empty
+    const sessionMatch = document.cookie.match(/session=([^;]+)/);
+    return sessionMatch && sessionMatch[1] && sessionMatch[1] !== "";
   }
   return false;
 };
@@ -61,9 +62,13 @@ export const getCurrentUser = createAsyncThunk(
       const response = await axios.get(`${API}/auth/me`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.detail || "Failed to get user"
-      );
+      // Check if it's an authentication error (401) vs other errors
+      const isAuthError = error.response?.status === 401;
+      return rejectWithValue({
+        message: error.response?.data?.detail || "Failed to get user",
+        isAuthError,
+        status: error.response?.status,
+      });
     }
   }
 );
@@ -105,7 +110,7 @@ const authSlice = createSlice({
     user: null,
     loading: false,
     error: null,
-    isAuthenticated: checkAuth(),
+    isAuthenticated: false,
     lastUserFetch: null,
   },
   reducers: {
@@ -113,9 +118,18 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
       state.error = null;
+      state.lastUserFetch = null;
     },
     clearError: state => {
       state.error = null;
+    },
+    // Action to handle successful authentication restoration
+    restoreAuth: (state, action) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
+      state.loading = false;
+      state.error = null;
+      state.lastUserFetch = Date.now();
     },
   },
   extraReducers: builder => {
@@ -160,15 +174,22 @@ const authSlice = createSlice({
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.loading = false;
-        // Don't automatically log out user on getCurrentUser failure
-        // Only set error, keep authentication state
-        state.error = action.payload;
+        // If it's an authentication error (401), clear auth state
+        // For other errors, keep the user logged in but show error
+        if (action.payload?.isAuthError || action.payload?.status === 401) {
+          state.user = null;
+          state.isAuthenticated = false;
+          // Note: httpOnly cookies can't be cleared from client-side
+          // The server will handle cookie cleanup via logout endpoint
+        }
+        state.error = action.payload?.message || action.payload;
       })
       // Logout
       .addCase(logoutUser.fulfilled, state => {
         state.user = null;
         state.isAuthenticated = false;
         state.error = null;
+        // Note: httpOnly cookies are cleared by the logout API endpoint
       })
       // Update profile
       .addCase(updateUserProfile.pending, state => {
@@ -187,5 +208,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, restoreAuth } = authSlice.actions;
 export default authSlice.reducer;
