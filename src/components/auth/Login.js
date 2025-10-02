@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { loginUser, clearError } from "../../store/authSlice";
 import { Button } from "../../components/ui/button";
@@ -70,10 +71,12 @@ const Login = () => {
         {/* Logo and Brand */}
         <div className="text-center mb-8">
           <div className="flex justify-center items-center space-x-3 mb-4">
-            <img
+            <Image
               src="/logo.png"
               alt="GenieLearn Logo"
-              className="h-12 w-12 object-contain"
+              width={48}
+              height={48}
+              className="object-contain"
             />
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
               GenieLearn
