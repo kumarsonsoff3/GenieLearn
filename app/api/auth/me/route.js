@@ -40,7 +40,7 @@ export async function GET() {
     try {
       user = await users.get(sessionData.userId);
     } catch (error) {
-      console.log("User lookup failed:", error);
+      // User lookup failed - session may be invalid
       return NextResponse.json(
         { detail: "User not found or session invalid" },
         { status: 401 }

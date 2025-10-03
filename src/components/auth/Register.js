@@ -18,6 +18,7 @@ import {
 } from "../../components/ui/card";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Loader2 } from "lucide-react";
+import OAuthButtons from "./OAuthButtons";
 
 const Register = () => {
   const dispatch = useDispatch();
@@ -164,6 +165,21 @@ const Register = () => {
               <Alert className="mb-4" variant="destructive">
                 <AlertDescription>{error || validationError}</AlertDescription>
               </Alert>
+            )}
+
+            {/* OAuth Registration Options */}
+            {!registrationSuccess && (
+              <div className="mb-6">
+                <OAuthButtons />
+
+                <div className="my-6 flex items-center">
+                  <div className="flex-grow border-t border-gray-200"></div>
+                  <span className="flex-shrink mx-4 text-gray-400 text-sm">
+                    or sign up with email
+                  </span>
+                  <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+              </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">

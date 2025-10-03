@@ -21,7 +21,7 @@ export async function POST() {
         await account.deleteSession("current");
       } catch (error) {
         // Session might already be invalid
-        console.log("Session deletion error:", error);
+        // Session deletion error - continue with cookie cleanup
       }
 
       // Clear session cookie

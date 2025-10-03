@@ -113,7 +113,7 @@ export async function PUT(request) {
         try {
           await users.updateEmail(userId, email.trim().toLowerCase());
         } catch (error) {
-          console.log("Email update failed:", error);
+          // Email update failed - continue with other updates
           // Continue even if email update fails
         }
       }

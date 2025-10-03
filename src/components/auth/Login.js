@@ -18,6 +18,7 @@ import {
 } from "../../components/ui/card";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Loader2 } from "lucide-react";
+import OAuthButtons from "./OAuthButtons";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -30,6 +31,7 @@ const Login = () => {
   });
 
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
+  const [oauthError, setOauthError] = useState("");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -38,11 +40,35 @@ const Login = () => {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    // Check if user was redirected from registration
+    // Check if user was redirected from registration or OAuth errors
     const urlParams = new URLSearchParams(window.location.search);
+
     if (urlParams.get("registered") === "true") {
       setShowRegistrationSuccess(true);
-      // Clear the URL parameter
+    }
+
+    // Handle OAuth errors
+    const oauthErrorParam = urlParams.get("error");
+    if (oauthErrorParam) {
+      const errorMessages = {
+        missing_oauth_params:
+          "OAuth authentication failed. This usually means the OAuth provider (Google/GitHub) is not properly configured in Appwrite Console.",
+        oauth_failed:
+          "OAuth authentication was cancelled or failed. Please try again.",
+        oauth_session_failed:
+          "Failed to create session after OAuth authentication.",
+        oauth_callback_error:
+          "An error occurred during OAuth callback processing.",
+      };
+
+      setOauthError(
+        errorMessages[oauthErrorParam] ||
+          "OAuth authentication failed. Please try again."
+      );
+    }
+
+    // Clear URL parameters
+    if (urlParams.get("registered") || urlParams.get("error")) {
       window.history.replaceState({}, "", "/login");
     }
   }, []);
@@ -106,11 +132,32 @@ const Login = () => {
               </Alert>
             )}
 
+            {oauthError && (
+              <Alert className="mb-4" variant="destructive">
+                <AlertDescription>
+                  <strong>OAuth Error:</strong> {oauthError}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {error && (
               <Alert className="mb-4" variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+
+            {/* OAuth Login Options */}
+            <div className="mb-6">
+              <OAuthButtons />
+
+              <div className="my-6 flex items-center">
+                <div className="flex-grow border-t border-gray-200"></div>
+                <span className="flex-shrink mx-4 text-gray-400 text-sm">
+                  or
+                </span>
+                <div className="flex-grow border-t border-gray-200"></div>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
