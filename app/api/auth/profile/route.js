@@ -77,7 +77,7 @@ export async function PUT(request) {
         process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
         userId,
         {
-          userId: userId,
+          user_id: userId, // Use consistent attribute name
           name: name.trim(),
           email: email.trim().toLowerCase(),
           subjects_of_interest: subjects_of_interest || [],
@@ -101,6 +101,7 @@ export async function PUT(request) {
         process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
         userId,
         {
+          user_id: userId, // Include user_id as required by Appwrite schema
           name: name.trim(),
           email: email.trim().toLowerCase(),
           subjects_of_interest: subjects_of_interest || [],

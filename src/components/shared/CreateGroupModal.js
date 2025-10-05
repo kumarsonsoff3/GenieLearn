@@ -37,7 +37,7 @@ const CreateGroupModal = ({
     setError("");
 
     try {
-      const response = await api.post("groups", formData);
+      const response = await api.post("/groups/create", formData);
 
       // Success - close modal and reset form
       setOpen(false);

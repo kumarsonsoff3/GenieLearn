@@ -83,10 +83,31 @@ export async function POST(request) {
         description: description ? description.trim() : "",
         is_public: is_public !== undefined ? is_public : true,
         creator_id: userId,
+        created_by: userId, // Required by Appwrite schema
         members: [userId],
         created_at: new Date().toISOString(),
       }
     );
+
+    // Add creator as first member in group_members collection
+    try {
+      await databases.createDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_GROUP_MEMBERS_COLLECTION_ID ||
+          "group_members",
+        ID.unique(),
+        {
+          group_id: group.$id,
+          user_id: userId,
+          role: "admin", // Creator gets admin role
+          joined_at: new Date().toISOString(),
+        }
+      );
+      console.log("Creator added to group_members");
+    } catch (error) {
+      console.error("Error adding creator to group_members:", error);
+      // Don't fail the whole request if this fails
+    }
 
     return NextResponse.json({
       id: group.$id,

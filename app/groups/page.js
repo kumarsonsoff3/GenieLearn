@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import ProtectedRoute from '../../src/components/auth/ProtectedRoute'
-import GroupsComponent from '../../src/components/Groups'
+import ProtectedRoute from "../../src/components/auth/ProtectedRoute";
+import GroupsView from "../../src/components/GroupsView";
 
 export default function GroupsPage() {
   return (
     <ProtectedRoute>
-      <GroupsComponent />
+      <GroupsView />
     </ProtectedRoute>
-  )
+  );
 }
