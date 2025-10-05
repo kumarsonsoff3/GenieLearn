@@ -1,4 +1,3 @@
-import React from "react";
 import { Alert, AlertDescription } from "./alert";
 import { AlertCircle, CheckCircle, Info, AlertTriangle } from "lucide-react";
 

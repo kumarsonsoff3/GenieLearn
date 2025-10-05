@@ -10,9 +10,10 @@ import { LoadingSpinner } from "./ui/loading-spinner";
 import { ErrorMessage } from "./ui/error-message";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Input } from "./ui/input";
-import { Search, Users, Globe } from "lucide-react";
+import { Search, Users, Globe, RefreshCw } from "lucide-react";
 import api from "../utils/enhancedApi";
 import { useToast } from "./ToastProvider";
+import { Button } from "./ui/button";
 
 const GroupsView = () => {
   const { user } = useSelector(state => state.auth);
@@ -21,6 +22,7 @@ const GroupsView = () => {
   const [publicGroups, setPublicGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("my-groups");
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,8 +33,8 @@ const GroupsView = () => {
       setError(null);
 
       const [publicResponse, myGroupsResponse] = await Promise.all([
-        api.get("/groups/list"),
-        api.get("/groups/my-groups"),
+        api.get("/groups/list", { skipCache: true }),
+        api.get("/groups/my-groups", { skipCache: true }),
       ]);
 
       setPublicGroups(publicResponse.data || []);
@@ -48,6 +50,19 @@ const GroupsView = () => {
   useEffect(() => {
     fetchGroups();
   }, [fetchGroups]);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await fetchGroups();
+      showSuccess("Groups refreshed!");
+    } catch (error) {
+      console.error("Error refreshing groups:", error);
+      showError("Failed to refresh groups");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchGroups, showSuccess, showError]);
 
   const handleJoinGroup = useCallback(
     async groupId => {
@@ -114,13 +129,21 @@ const GroupsView = () => {
   // Filter out groups that user has already joined from public groups
   const filteredPublicGroups = filterGroups(
     publicGroups.filter(pg => {
-      // Check if user is a member using various possible ID fields
+      // Use the is_member field from API or fallback to checking myGroups
+      if (pg.is_member !== undefined) {
+        return !pg.is_member;
+      }
+      // Fallback: Check if user is a member using various possible ID fields
       const isMember = myGroups.some(
         mg => mg.id === pg.id || mg.$id === pg.$id || mg._id === pg._id
       );
       return !isMember;
     })
   );
+
+  console.log("Debug - Public Groups:", publicGroups.length);
+  console.log("Debug - My Groups:", myGroups.length);
+  console.log("Debug - Filtered Public Groups:", filteredPublicGroups.length);
 
   if (loading) {
     return (
@@ -155,7 +178,21 @@ const GroupsView = () => {
               Collaborate and learn together with your peers
             </p>
           </div>
-          <CreateGroupModal onGroupCreated={handleGroupCreated} />
+          <div className="flex gap-2">
+            <Button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+            <CreateGroupModal onGroupCreated={handleGroupCreated} />
+          </div>
         </div>
 
         {/* Search Bar */}

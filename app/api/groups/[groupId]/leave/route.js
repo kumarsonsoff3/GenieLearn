@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { Client, Databases, Users, ID } from "node-appwrite";
+import { Client, Databases, Users, Storage, Query, ID } from "node-appwrite";
 
 export async function POST(request, { params }) {
   try {
@@ -35,6 +35,7 @@ export async function POST(request, { params }) {
 
     const databases = new Databases(adminClient);
     const users = new Users(adminClient);
+    const storage = new Storage(adminClient);
 
     // Get user ID from session
     const userId = sessionData.userId;
@@ -67,15 +68,131 @@ export async function POST(request, { params }) {
 
     // Delete the group if no members are left
     if (updatedMembers.length === 0) {
-      await databases.deleteDocument(
-        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-        process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
-        groupId
-      );
-      return NextResponse.json({
-        message:
-          "Successfully left the group. Group was deleted as it had no remaining members.",
-      });
+      console.log(`Deleting group ${groupId} and all related data...`);
+
+      // ============================================================
+      // COMPREHENSIVE GROUP CLEANUP
+      // When a group is deleted, we must remove all associated data:
+      // 1. Files (from storage bucket and database)
+      // 2. Member records (from group_members collection)
+      // 3. Messages (from messages collection)
+      // 4. Group document (from groups collection)
+      // ============================================================
+
+      try {
+        // 1. Delete all files from storage and file records
+        const { documents: files } = await databases.listDocuments(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+          process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID ||
+            "group_files",
+          [Query.equal("group_id", groupId), Query.limit(1000)]
+        );
+
+        console.log(`Found ${files.length} files to delete`);
+        for (const file of files) {
+          try {
+            // Delete from storage bucket
+            if (file.file_id) {
+              await storage.deleteFile(
+                process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID || "files",
+                file.file_id
+              );
+              console.log(`Deleted file from storage: ${file.file_id}`);
+            }
+          } catch (error) {
+            console.error(
+              `Error deleting file ${file.file_id} from storage:`,
+              error
+            );
+          }
+
+          try {
+            // Delete file record from database
+            await databases.deleteDocument(
+              process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+              process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID ||
+                "group_files",
+              file.$id
+            );
+            console.log(`Deleted file record: ${file.$id}`);
+          } catch (error) {
+            console.error(`Error deleting file record ${file.$id}:`, error);
+          }
+        }
+
+        // 2. Delete all member records from group_members collection
+        const { documents: memberRecords } = await databases.listDocuments(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+          process.env.NEXT_PUBLIC_APPWRITE_GROUP_MEMBERS_COLLECTION_ID ||
+            "group_members",
+          [Query.equal("group_id", groupId), Query.limit(1000)]
+        );
+
+        console.log(`Found ${memberRecords.length} member records to delete`);
+        for (const memberRecord of memberRecords) {
+          try {
+            await databases.deleteDocument(
+              process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+              process.env.NEXT_PUBLIC_APPWRITE_GROUP_MEMBERS_COLLECTION_ID ||
+                "group_members",
+              memberRecord.$id
+            );
+            console.log(`Deleted member record: ${memberRecord.$id}`);
+          } catch (error) {
+            console.error(
+              `Error deleting member record ${memberRecord.$id}:`,
+              error
+            );
+          }
+        }
+
+        // 3. Delete all messages
+        const { documents: messages } = await databases.listDocuments(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+          process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
+          [Query.equal("group_id", groupId), Query.limit(1000)]
+        );
+
+        console.log(`Found ${messages.length} messages to delete`);
+        for (const message of messages) {
+          try {
+            await databases.deleteDocument(
+              process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+              process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
+              message.$id
+            );
+            console.log(`Deleted message: ${message.$id}`);
+          } catch (error) {
+            console.error(`Error deleting message ${message.$id}:`, error);
+          }
+        }
+
+        // 4. Finally, delete the group itself
+        await databases.deleteDocument(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+          process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
+          groupId
+        );
+        console.log(`Deleted group: ${groupId}`);
+
+        return NextResponse.json({
+          message:
+            "Successfully left the group. Group and all related data were deleted as it had no remaining members.",
+        });
+      } catch (error) {
+        console.error("Error during group cleanup:", error);
+        // Even if cleanup fails, try to delete the group
+        try {
+          await databases.deleteDocument(
+            process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+            process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
+            groupId
+          );
+        } catch (deleteError) {
+          console.error("Failed to delete group:", deleteError);
+        }
+        throw error;
+      }
     } else {
       // Get user details for system message
       const user = await users.get(userId);
@@ -100,6 +217,33 @@ export async function POST(request, { params }) {
           members: updatedMembers,
         }
       );
+
+      // Delete member record from group_members collection
+      try {
+        const { documents: memberRecords } = await databases.listDocuments(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+          process.env.NEXT_PUBLIC_APPWRITE_GROUP_MEMBERS_COLLECTION_ID ||
+            "group_members",
+          [
+            Query.equal("group_id", groupId),
+            Query.equal("user_id", userId),
+            Query.limit(1),
+          ]
+        );
+
+        if (memberRecords.length > 0) {
+          await databases.deleteDocument(
+            process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+            process.env.NEXT_PUBLIC_APPWRITE_GROUP_MEMBERS_COLLECTION_ID ||
+              "group_members",
+            memberRecords[0].$id
+          );
+          console.log(`Deleted member record for user ${userId}`);
+        }
+      } catch (error) {
+        console.error("Error deleting member record:", error);
+        // Don't fail the whole request if this fails
+      }
 
       // Create system message for leave
       try {
