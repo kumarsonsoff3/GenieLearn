@@ -359,7 +359,7 @@ const GroupFiles = ({ group, onRefresh }) => {
                 </DialogHeader>
                 <form onSubmit={handleUpload} className="space-y-4">
                   <div>
-                    <Label htmlFor="file">Select File (Max 10MB)</Label>
+                    <Label htmlFor="file">Select File (Max 50MB)</Label>
                     <Input
                       id="file"
                       type="file"
