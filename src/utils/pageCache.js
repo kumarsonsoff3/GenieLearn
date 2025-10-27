@@ -4,7 +4,12 @@ class PageCache {
   constructor() {
     this.cache = new Map();
     this.maxSize = 10; // Maximum number of cached items
-    this.ttl = 5 * 60 * 1000; // 5 minutes TTL
+    this.ttl = 5 * 60 * 1000; // 5 minutes TTL (default)
+    // Shorter TTL for specific endpoints that need fresh data
+    this.customTTL = {
+      "/groups/list": 30 * 1000, // 30 seconds for public groups list
+      "/groups/my-groups": 60 * 1000, // 1 minute for user's groups
+    };
   }
 
   set(key, data) {
@@ -24,8 +29,11 @@ class PageCache {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
+    // Get TTL for this specific key or use default
+    const ttl = this.customTTL[key] || this.ttl;
+
     // Check if data is still fresh
-    if (Date.now() - entry.timestamp > this.ttl) {
+    if (Date.now() - entry.timestamp > ttl) {
       this.cache.delete(key);
       return null;
     }

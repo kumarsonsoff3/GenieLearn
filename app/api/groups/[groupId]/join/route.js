@@ -66,6 +66,26 @@ export async function POST(request, { params }) {
       }
     );
 
+    // Add user to group_members collection
+    try {
+      await databases.createDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_GROUP_MEMBERS_COLLECTION_ID ||
+          "group_members",
+        ID.unique(),
+        {
+          group_id: groupId,
+          user_id: userId,
+          role: "member", // Regular member role
+          joined_at: new Date().toISOString(),
+        }
+      );
+      console.log("User added to group_members");
+    } catch (error) {
+      console.error("Error adding user to group_members:", error);
+      // Don't fail the whole request if this fails
+    }
+
     // Get user details for system message
     const user = await users.get(userId);
     let userName = user.name;

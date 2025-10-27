@@ -42,10 +42,12 @@ export async function GET() {
       process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
       [
         Query.equal("is_public", true),
-        Query.orderDesc("created_at"),
+        Query.orderDesc("$createdAt"),
         Query.limit(100),
       ]
     );
+
+    console.log(`[API] Found ${groups.length} public groups for list endpoint`);
 
     // Enrich groups with creator info and membership status
     const enrichedGroups = await Promise.all(
@@ -62,6 +64,11 @@ export async function GET() {
           console.log("Creator profile not found");
         }
 
+        const isMember = group.members?.includes(userId) || false;
+        console.log(
+          `[API] Group "${group.name}" - User ${userId} is member: ${isMember}`
+        );
+
         return {
           id: group.$id,
           name: group.name,
@@ -70,13 +77,21 @@ export async function GET() {
           creator_id: group.creator_id,
           creator_name: creatorName,
           member_count: group.members?.length || 0,
-          is_member: group.members?.includes(userId) || false,
-          created_at: group.created_at,
+          is_member: isMember,
+          created_at: group.created_at || group.$createdAt,
         };
       })
     );
 
-    return NextResponse.json(enrichedGroups);
+    console.log(`[API] Returning ${enrichedGroups.length} enriched groups`);
+
+    return NextResponse.json(enrichedGroups, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     console.error("List groups error:", error);
     return NextResponse.json(

@@ -18,7 +18,7 @@ import { createRealtimeClient } from "../lib/appwrite";
 import { DATABASE_ID, COLLECTIONS } from "../lib/appwrite-config";
 import useStats from "../hooks/useStats";
 
-const GroupChat = ({ group, onBack }) => {
+const GroupChat = ({ group, onBack, embedded = false }) => {
   const { user } = useSelector(state => state.auth);
   const { incrementMessageCount } = useStats();
   const [messages, setMessages] = useState([]);
@@ -49,9 +49,11 @@ const GroupChat = ({ group, onBack }) => {
 
       // Load messages in batches to get complete chat history
       while (hasMore) {
-        const response = await api.get(`/groups/${group.id}/messages?limit=${batchSize}&offset=${offset}`);
+        const response = await api.get(
+          `/groups/${group.id}/messages?limit=${batchSize}&offset=${offset}`
+        );
         const batch = response.data;
-        
+
         if (batch.length === 0 || batch.length < batchSize) {
           // No more messages or last batch
           allMessages.push(...batch);
@@ -59,10 +61,12 @@ const GroupChat = ({ group, onBack }) => {
         } else {
           allMessages.push(...batch);
           offset += batchSize;
-          
+
           // Safety check to prevent infinite loops (max 5,000 messages)
           if (allMessages.length >= 5000) {
-            console.warn("Reached maximum message limit (5,000) for performance");
+            console.warn(
+              "Reached maximum message limit (5,000) for performance"
+            );
             hasMore = false;
           }
         }
@@ -72,21 +76,27 @@ const GroupChat = ({ group, onBack }) => {
         ...msg,
         timestamp: new Date(msg.timestamp),
       }));
-      
+
       // Messages are already sorted by timestamp from API (Query.orderAsc)
       setMessages(formattedMessages);
-      console.log(`Loaded ${formattedMessages.length} messages for group ${group.name}`);
+      console.log(
+        `Loaded ${formattedMessages.length} messages for group ${group.name}`
+      );
     } catch (error) {
       console.error("Error loading message history:", error);
       // Fallback: try to load with simple limit if pagination fails
       try {
-        const response = await api.get(`/groups/${group.id}/messages?limit=1000`);
+        const response = await api.get(
+          `/groups/${group.id}/messages?limit=1000`
+        );
         const formattedMessages = response.data.map(msg => ({
           ...msg,
           timestamp: new Date(msg.timestamp),
         }));
         setMessages(formattedMessages);
-        console.log(`Loaded ${formattedMessages.length} messages (fallback) for group ${group.name}`);
+        console.log(
+          `Loaded ${formattedMessages.length} messages (fallback) for group ${group.name}`
+        );
       } catch (fallbackError) {
         console.error("Fallback message loading also failed:", fallbackError);
       }
@@ -330,48 +340,50 @@ const GroupChat = ({ group, onBack }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chat Header */}
-      <CardHeader className="flex-row items-center space-y-0 pb-4 border-b bg-gradient-to-r from-blue-50 to-orange-50">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onBack}
-          className="mr-3 hover:bg-white/80"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <CardTitle className="text-lg flex items-center space-x-2">
-            <Users className="h-5 w-5 text-blue-600" />
-            <span className="bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent font-bold">
-              {group.name}
-            </span>
-          </CardTitle>
-          <p className="text-sm text-gray-600 mt-1">
-            {group.member_count} member{group.member_count !== 1 ? "s" : ""}
-            {!isConnected && (
-              <>
-                <span className="text-red-500 ml-2 font-medium hover:text-red-600 transition-colors">
-                  • Disconnected
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleReconnect}
-                  className="ml-2 text-xs h-6 px-2"
-                >
-                  Reconnect
-                </Button>
-              </>
-            )}
-            {isConnected && (
-              <span className="text-green-500 ml-2 font-medium hover:text-green-600 transition-colors">
-                • Connected
+      {/* Chat Header - only show if not embedded */}
+      {!embedded && (
+        <CardHeader className="flex-row items-center space-y-0 pb-4 border-b bg-gradient-to-r from-blue-50 to-orange-50">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="mr-3 hover:bg-white/80"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <CardTitle className="text-lg flex items-center space-x-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <span className="bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent font-bold">
+                {group.name}
               </span>
-            )}
-          </p>
-        </div>
-      </CardHeader>
+            </CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              {group.member_count} member{group.member_count !== 1 ? "s" : ""}
+              {!isConnected && (
+                <>
+                  <span className="text-red-500 ml-2 font-medium hover:text-red-600 transition-colors">
+                    • Disconnected
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleReconnect}
+                    className="ml-2 text-xs h-6 px-2"
+                  >
+                    Reconnect
+                  </Button>
+                </>
+              )}
+              {isConnected && (
+                <span className="text-green-500 ml-2 font-medium hover:text-green-600 transition-colors">
+                  • Connected
+                </span>
+              )}
+            </p>
+          </div>
+        </CardHeader>
+      )}
 
       {/* Messages Area */}
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -386,116 +398,116 @@ const GroupChat = ({ group, onBack }) => {
           </div>
         ) : (
           Object.entries(groupedMessages).map(([date, dateMessages]) => (
-          <div key={date}>
-            {/* Date separator */}
-            <div className="flex items-center justify-center my-4">
-              <div className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-600">
-                {date}
+            <div key={date}>
+              {/* Date separator */}
+              <div className="flex items-center justify-center my-4">
+                <div className="bg-gray-100 px-3 py-1 rounded-full text-xs text-gray-600">
+                  {date}
+                </div>
               </div>
-            </div>
 
-            {/* Messages for this date */}
-            {dateMessages.map(message => {
-              // System messages (user joined/left)
-              if (message.type === "system" || message.is_system_message) {
+              {/* Messages for this date */}
+              {dateMessages.map(message => {
+                // System messages (user joined/left)
+                if (message.type === "system" || message.is_system_message) {
+                  return (
+                    <div key={message.id} className="flex justify-center mb-3">
+                      <div className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
+                        {message.content}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Regular messages
                 return (
-                  <div key={message.id} className="flex justify-center mb-3">
-                    <div className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-medium">
-                      {message.content}
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.sender_id === user?.id
+                        ? "justify-end"
+                        : "justify-start"
+                    } mb-3`}
+                  >
+                    <div
+                      className={`max-w-xs lg:max-w-md ${
+                        message.sender_id === user?.id ? "order-2" : "order-1"
+                      }`}
+                    >
+                      {message.sender_id !== user?.id && (
+                        <div className="flex items-center space-x-2 mb-1">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {message.sender_name
+                                .split(" ")
+                                .map(n => n[0])
+                                .join("")
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex items-center space-x-1">
+                            <span className="text-xs text-gray-600">
+                              {message.sender_name}
+                            </span>
+                            {message.sender_id === group.creator_id && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0 h-4 bg-amber-100 text-amber-700 border-amber-200 flex items-center"
+                                title="Group Creator"
+                              >
+                                <Crown className="h-3 w-3" />
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        className={`px-4 py-2 rounded-lg shadow-sm relative ${
+                          message.sender_id === user?.id
+                            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-none"
+                            : "bg-white border border-gray-200 text-gray-900 rounded-bl-none"
+                        }`}
+                      >
+                        {message.sender_id === user?.id &&
+                          message.sender_id === group.creator_id && (
+                            <div className="absolute -top-1 -right-1">
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0 h-4 bg-amber-400 text-amber-900 border-amber-500 flex items-center"
+                                title="You are the group creator"
+                              >
+                                <Crown className="h-3 w-3" />
+                              </Badge>
+                            </div>
+                          )}
+                        <p
+                          className={`text-sm ${
+                            message.isOptimistic ? "opacity-70" : ""
+                          }`}
+                        >
+                          {message.content}
+                        </p>
+                        <p
+                          className={`text-xs mt-1 flex items-center gap-1 ${
+                            message.sender_id === user?.id
+                              ? "text-blue-100"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {formatTime(message.timestamp)}
+                          {message.isOptimistic && (
+                            <span
+                              className="inline-block w-2 h-2 bg-current rounded-full animate-pulse"
+                              title="Sending..."
+                            ></span>
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );
-              }
-
-              // Regular messages
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.sender_id === user?.id
-                      ? "justify-end"
-                      : "justify-start"
-                  } mb-3`}
-                >
-                  <div
-                    className={`max-w-xs lg:max-w-md ${
-                      message.sender_id === user?.id ? "order-2" : "order-1"
-                    }`}
-                  >
-                    {message.sender_id !== user?.id && (
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-xs">
-                            {message.sender_name
-                              .split(" ")
-                              .map(n => n[0])
-                              .join("")
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs text-gray-600">
-                            {message.sender_name}
-                          </span>
-                          {message.sender_id === group.creator_id && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs px-1 py-0 h-4 bg-amber-100 text-amber-700 border-amber-200 flex items-center"
-                              title="Group Creator"
-                            >
-                              <Crown className="h-3 w-3" />
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div
-                      className={`px-4 py-2 rounded-lg shadow-sm relative ${
-                        message.sender_id === user?.id
-                          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-none"
-                          : "bg-white border border-gray-200 text-gray-900 rounded-bl-none"
-                      }`}
-                    >
-                      {message.sender_id === user?.id &&
-                        message.sender_id === group.creator_id && (
-                          <div className="absolute -top-1 -right-1">
-                            <Badge
-                              variant="secondary"
-                              className="text-xs px-1 py-0 h-4 bg-amber-400 text-amber-900 border-amber-500 flex items-center"
-                              title="You are the group creator"
-                            >
-                              <Crown className="h-3 w-3" />
-                            </Badge>
-                          </div>
-                        )}
-                      <p
-                        className={`text-sm ${
-                          message.isOptimistic ? "opacity-70" : ""
-                        }`}
-                      >
-                        {message.content}
-                      </p>
-                      <p
-                        className={`text-xs mt-1 flex items-center gap-1 ${
-                          message.sender_id === user?.id
-                            ? "text-blue-100"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {formatTime(message.timestamp)}
-                        {message.isOptimistic && (
-                          <span
-                            className="inline-block w-2 h-2 bg-current rounded-full animate-pulse"
-                            title="Sending..."
-                          ></span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+              })}
+            </div>
           ))
         )}
         <div ref={messagesEndRef} />

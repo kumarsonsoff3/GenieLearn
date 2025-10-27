@@ -48,6 +48,10 @@ export async function GET() {
       group.members?.includes(userId)
     );
 
+    console.log(
+      `[API] User ${userId} is member of ${userGroups.length} groups`
+    );
+
     // Enrich groups with creator info
     const enrichedGroups = await Promise.all(
       userGroups.map(async group => {
@@ -72,12 +76,20 @@ export async function GET() {
           creator_name: creatorName,
           member_count: group.members?.length || 0,
           is_member: true,
-          created_at: group.created_at,
+          created_at: group.created_at || group.$createdAt,
         };
       })
     );
 
-    return NextResponse.json(enrichedGroups);
+    console.log(`[API] Returning ${enrichedGroups.length} user groups`);
+
+    return NextResponse.json(enrichedGroups, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error) {
     console.error("Get user groups error:", error);
     return NextResponse.json(

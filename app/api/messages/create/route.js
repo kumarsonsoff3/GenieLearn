@@ -101,7 +101,10 @@ export async function POST(request) {
         group_id,
         sender_id: userId,
         sender_name: userName,
+        user_id: userId, // Required by Appwrite schema
         timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(), // Required by Appwrite schema
+        message_type: "text", // Required by Appwrite schema
       }
     );
 

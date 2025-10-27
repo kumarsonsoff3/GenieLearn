@@ -50,7 +50,7 @@ export async function POST(request) {
         process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
         user.$id,
         {
-          userId: user.$id,
+          user_id: user.$id, // Use consistent attribute name
           name: name.trim(),
           email: email.trim().toLowerCase(),
           subjects_of_interest: subjects_of_interest || [],

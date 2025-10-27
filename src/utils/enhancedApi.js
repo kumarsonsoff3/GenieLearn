@@ -22,8 +22,8 @@ const cachedGet = async (url, config = {}) => {
   // Make API call
   const response = await api.get(url, config);
 
-  // Cache the response
-  if (response.data) {
+  // Cache the response (but not if skipCache was requested)
+  if (response.data && !config.skipCache) {
     pageCache.set(cacheKey, response.data);
   }
 
