@@ -7,8 +7,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { Badge } from "../ui/badge";
-import { Avatar, AvatarFallback } from "../ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { ScrollArea } from "../ui/scroll-area";
 import { LoadingSpinner } from "../ui/loading-spinner";
 import {
   Upload,
@@ -35,11 +32,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import api from "../../utils/enhancedApi";
 import { useToast } from "../ToastProvider";
-import { Storage, ID, Permission, Role } from "appwrite";
+import { Storage } from "appwrite";
 import { createRealtimeClient } from "../../lib/appwrite";
 import { BUCKET_ID } from "../../lib/appwrite-config";
 import FilePreviewModal from "./FilePreviewModal";
@@ -53,7 +51,6 @@ const GroupFiles = ({ group, onRefresh }) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
   const [fileToUpload, setFileToUpload] = useState(null);
   const [description, setDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,39 +89,17 @@ const GroupFiles = ({ group, onRefresh }) => {
     // Set up real-time subscription for file updates
     const client = createRealtimeClient();
 
-    console.log("=== Setting up realtime subscription ===");
-    console.log("Group ID:", group.id);
-    console.log("Database ID:", process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID);
-    console.log(
-      "Collection ID:",
-      process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID
-    );
-
     try {
       const channelName = `databases.${process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID}.collections.${process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID}.documents`;
-      console.log("Subscribing to channel:", channelName);
 
       const unsubscribe = client.subscribe([channelName], response => {
-        console.log("=== Realtime event received ===");
-        console.log("Event type:", response.events[0]);
-        console.log("Payload:", response.payload);
-
         const payload = response.payload;
 
         // Check if the event is for our group
         const isForThisGroup =
           payload.group_id === group.id || payload.group_id === group.$id;
-        console.log(
-          "Is for this group?",
-          isForThisGroup,
-          "Payload group_id:",
-          payload.group_id,
-          "Our group id:",
-          group.id
-        );
 
         if (!isForThisGroup) {
-          console.log("Event not for this group, ignoring");
           return;
         }
 
@@ -132,34 +107,26 @@ const GroupFiles = ({ group, onRefresh }) => {
 
         if (eventType.includes(".create")) {
           // New file uploaded - add to list
-          console.log("Adding new file to list:", payload.$id);
           setFiles(prev => {
             // Avoid duplicates
             if (prev.some(f => f.$id === payload.$id)) {
-              console.log("File already in list, skipping");
               return prev;
             }
-            console.log("File added successfully");
             return [payload, ...prev];
           });
         } else if (eventType.includes(".delete")) {
           // File deleted - remove from list
-          console.log("Removing file from list:", payload.$id);
           setFiles(prev => prev.filter(file => file.$id !== payload.$id));
         } else if (eventType.includes(".update")) {
           // File updated - update in list
-          console.log("Updating file in list:", payload.$id);
           setFiles(prev =>
             prev.map(file => (file.$id === payload.$id ? payload : file))
           );
         }
       });
 
-      console.log("Realtime subscription set up successfully");
-
       // Cleanup subscription on unmount
       return () => {
-        console.log("Cleaning up realtime subscription");
         if (unsubscribe) unsubscribe();
       };
     } catch (error) {
@@ -188,15 +155,11 @@ const GroupFiles = ({ group, onRefresh }) => {
 
     try {
       setUploading(true);
-      console.log("=== Starting file upload ===");
-      console.log("File:", fileToUpload.name, "Size:", fileToUpload.size);
 
       // Create FormData to send file to API
       const formData = new FormData();
       formData.append("file", fileToUpload);
       formData.append("description", description || "");
-
-      console.log("Uploading to:", `/api/groups/${group.id}/files`);
 
       // Upload via API route (server-side handles Appwrite upload)
       const response = await fetch(`/api/groups/${group.id}/files`, {
@@ -204,25 +167,16 @@ const GroupFiles = ({ group, onRefresh }) => {
         body: formData,
       });
 
-      console.log("Upload response status:", response.status);
-
       if (!response.ok) {
         const error = await response.json();
-        console.error("Upload failed:", error);
         throw new Error(error.detail || "Failed to upload file");
       }
 
       const uploadedFile = await response.json();
-      console.log("=== File uploaded successfully ===");
-      console.log("Uploaded file document:", uploadedFile);
-      console.log("File $id:", uploadedFile.$id);
-      console.log("File file_id:", uploadedFile.file_id);
 
       showSuccess("File uploaded successfully!");
 
       // Real-time will handle adding the file to the list
-      console.log("Real-time subscription will add file to list");
-
       setUploadDialogOpen(false);
       setFileToUpload(null);
       setDescription("");
@@ -244,18 +198,16 @@ const GroupFiles = ({ group, onRefresh }) => {
 
       if (!fileId) {
         showError("File ID not found");
-        console.error("No file ID in file object:", file);
         return;
       }
 
       const result = storage.getFileDownload(BUCKET_ID, fileId);
-      console.log("Download URL:", result, "for file:", file);
 
       // Open download link
       window.open(result, "_blank");
       showSuccess("Downloading file...");
     } catch (error) {
-      console.error("Error downloading file:", error, file);
+      console.error("Error downloading file:", error);
       showError("Failed to download file: " + error.message);
     }
   };
@@ -269,20 +221,19 @@ const GroupFiles = ({ group, onRefresh }) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
 
     try {
-      // Delete from storage
-      const client = createRealtimeClient();
-      const storage = new Storage(client);
-      await storage.deleteFile(BUCKET_ID, file.file_id);
-
-      // Delete from database
-      await api.delete(`/groups/${group.id}/files/${file.$id}`);
+      // Delete via API (backend will handle both storage and database)
+      const response = await api.delete(
+        `/groups/${group.id}/files/${file.$id}`
+      );
 
       showSuccess("File deleted successfully");
+
+      // Refresh the file list
       fetchFiles();
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Error deleting file:", error);
-      showError("Failed to delete file");
+      showError(error.response?.data?.detail || "Failed to delete file");
     }
   };
 
@@ -490,16 +441,14 @@ const GroupFiles = ({ group, onRefresh }) => {
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </DropdownMenuItem>
-                      {(file.uploaded_by === user?.$id ||
-                        group.creator_id === user?.$id) && (
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(file)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(file)}
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

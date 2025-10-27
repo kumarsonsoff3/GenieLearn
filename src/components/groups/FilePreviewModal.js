@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Download, ExternalLink, FileText, AlertCircle } from "lucide-react";
@@ -14,7 +15,6 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
   // Get the actual storage file ID
   const getStorageFileId = () => {
     const fileId = file.file_id || file.fileId || file.$id;
-    console.log("Resolved file ID:", fileId);
     return fileId;
   };
 
@@ -24,16 +24,13 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
       const storageFileId = getStorageFileId();
 
       if (!storageFileId) {
-        console.error("No file ID found:", file);
         return null;
       }
 
       // Use our API endpoint that handles authentication
       const url = `/api/storage/${storageFileId}/view`;
-      console.log("File view URL:", url);
       return url;
     } catch (err) {
-      console.error("Error getting file URL:", err, file);
       return null;
     }
   };
@@ -49,10 +46,8 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
 
       // Use our API endpoint for authenticated download
       const downloadUrl = `/api/storage/${storageFileId}/download`;
-      console.log("Download URL:", downloadUrl);
       window.open(downloadUrl, "_blank");
     } catch (err) {
-      console.error("Error downloading file:", err, file);
       setError("Failed to download file");
     }
   };
@@ -143,15 +138,17 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
                 </Button>
               </div>
             ) : (
-              <img
+              <Image
                 src={fileUrl}
                 alt={file.filename || file.original_name}
-                className="max-w-full max-h-full object-contain"
+                fill
+                className="object-contain"
                 onLoad={() => setLoading(false)}
                 onError={() => {
                   setLoading(false);
                   setError("Failed to load image");
                 }}
+                unoptimized
               />
             )}
           </div>

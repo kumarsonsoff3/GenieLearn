@@ -15,21 +15,16 @@ const cachedGet = async (url, config = {}) => {
   if (!config.skipCache) {
     const cached = pageCache.get(cacheKey);
     if (cached) {
-      console.log(`[Cache HIT] ${url}`, new Date().toISOString());
       return { data: cached, fromCache: true };
     }
-  } else {
-    console.log(`[Cache SKIP] ${url}`, new Date().toISOString());
   }
 
   // Make API call
-  console.log(`[API Call] ${url}`, new Date().toISOString());
   const response = await api.get(url, config);
 
   // Cache the response (but not if skipCache was requested)
   if (response.data && !config.skipCache) {
     pageCache.set(cacheKey, response.data);
-    console.log(`[Cache SET] ${url}`, new Date().toISOString());
   }
 
   return response;
