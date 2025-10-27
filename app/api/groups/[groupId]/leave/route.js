@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { Client, Databases, Users, Storage, Query, ID } from "node-appwrite";
+import { Client, Databases, Users, Storage, Query } from "node-appwrite";
 
 export async function POST(request, { params }) {
   try {
