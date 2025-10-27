@@ -137,9 +137,12 @@ const GroupFiles = ({ group, onRefresh }) => {
   const handleFileSelect = e => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (max 50MB - Appwrite's limit)
-      if (file.size > 50 * 1024 * 1024) {
-        showError("File size must be less than 50MB");
+      // Check file size using environment variable (default 50MB)
+      const maxFileSize =
+        parseInt(process.env.NEXT_PUBLIC_MAX_FILE_SIZE) || 50 * 1024 * 1024;
+      if (file.size > maxFileSize) {
+        const maxSizeMB = Math.round(maxFileSize / (1024 * 1024));
+        showError(`File size must be less than ${maxSizeMB}MB`);
         return;
       }
       setFileToUpload(file);
@@ -310,7 +313,15 @@ const GroupFiles = ({ group, onRefresh }) => {
                 </DialogHeader>
                 <form onSubmit={handleUpload} className="space-y-4">
                   <div>
-                    <Label htmlFor="file">Select File (Max 50MB)</Label>
+                    <Label htmlFor="file">
+                      Select File (Max{" "}
+                      {Math.round(
+                        (parseInt(process.env.NEXT_PUBLIC_MAX_FILE_SIZE) ||
+                          50 * 1024 * 1024) /
+                          (1024 * 1024)
+                      )}
+                      MB)
+                    </Label>
                     <Input
                       id="file"
                       type="file"
