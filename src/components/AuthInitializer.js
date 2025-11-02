@@ -29,15 +29,14 @@ export default function AuthInitializer({ children }) {
           try {
             // Try to restore user data from server
             await dispatch(getCurrentUser(true)).unwrap();
-            console.log("Session restored successfully");
           } catch (error) {
-            console.log("Session restore failed:", error.message);
+            console.error("Session restore failed:", error);
             // The auth slice will handle clearing invalid sessions
           }
           setIsRestoring(false);
         }
       } catch (error) {
-        console.log("Auth status check failed:", error);
+        console.error("Auth status check failed:", error);
       }
 
       setHasCheckedAuth(true);

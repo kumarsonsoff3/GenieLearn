@@ -17,6 +17,7 @@ import { Separator } from "../components/ui/separator";
 import Layout from "../components/Layout";
 import { CreateGroupModal } from "../components/shared";
 import { StatsCard } from "../components/ui/stats-card";
+import { formatStudyTime } from "../lib/utils";
 import {
   Users,
   MessageCircle,
@@ -158,13 +159,15 @@ const Dashboard = React.memo(() => {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                  <Button
-                    variant="secondary"
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/20"
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Quick Study
-                  </Button>
+                  <Link href="/focus">
+                    <Button
+                      variant="secondary"
+                      className="bg-white/20 hover:bg-white/30 text-white border-white/20"
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      Focus Mode
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -212,12 +215,25 @@ const Dashboard = React.memo(() => {
 
             <StatsCard
               title="Study Hours"
-              value="24.5"
+              value={
+                statsLoading
+                  ? "..."
+                  : formatStudyTime(userStats.totalStudyMinutes)
+              }
               icon={Clock}
               color="purple"
-              trend="up"
-              trendValue="+3.2 this week"
-              description="Consistent progress!"
+              trend={userStats.totalStudyMinutes > 0 ? "up" : "neutral"}
+              trendValue={
+                userStats.totalStudyMinutes > 0
+                  ? `${userStats.totalStudyMinutes} minutes total`
+                  : ""
+              }
+              description={
+                userStats.totalStudyMinutes === 0
+                  ? "Start your first focus session!"
+                  : "Keep up the great work!"
+              }
+              loading={statsLoading}
             />
 
             <StatsCard
@@ -244,6 +260,22 @@ const Dashboard = React.memo(() => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid md:grid-cols-2 gap-4">
+                    <Link href="/focus">
+                      <Button className="w-full h-auto p-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-left justify-start transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-white/20 rounded-lg">
+                            <Brain className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <div className="font-semibold">Focus Mode</div>
+                            <div className="text-xs text-purple-100">
+                              Deep work with timer
+                            </div>
+                          </div>
+                        </div>
+                      </Button>
+                    </Link>
+
                     <Link href="/groups">
                       <Button className="w-full h-auto p-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-left justify-start transition-all duration-200 shadow-lg hover:shadow-xl">
                         <div className="flex items-center space-x-3">

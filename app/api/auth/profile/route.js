@@ -1,6 +1,79 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { Client, Databases, Users } from "node-appwrite";
+import { Client, Databases, Users, Query } from "node-appwrite";
+
+export async function GET(request) {
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("session");
+
+    if (!session) {
+      return NextResponse.json(
+        { detail: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    // Parse session data
+    let sessionData;
+    try {
+      sessionData = JSON.parse(session.value);
+    } catch {
+      return NextResponse.json(
+        { detail: "Invalid session format, please login again" },
+        { status: 401 }
+      );
+    }
+
+    // Create admin client for secure operations
+    const adminClient = new Client()
+      .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
+      .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
+      .setKey(process.env.APPWRITE_API_KEY);
+
+    const databases = new Databases(adminClient);
+
+    // Get user ID from session
+    const userId = sessionData.userId;
+
+    try {
+      // Try to get profile by document ID first
+      const profile = await databases.getDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
+        userId
+      );
+
+      return NextResponse.json({
+        id: profile.$id,
+        userId: profile.user_id || profile.userId,
+        name: profile.name,
+        email: profile.email,
+        subjects_of_interest: profile.subjects_of_interest || [],
+        totalStudyMinutes: profile.totalStudyMinutes || 0,
+      });
+    } catch (error) {
+      if (error.code === 404) {
+        // Profile doesn't exist, return empty profile
+        return NextResponse.json({
+          id: null,
+          userId: userId,
+          name: "",
+          email: "",
+          subjects_of_interest: [],
+          totalStudyMinutes: 0,
+        });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    return NextResponse.json(
+      { detail: error.message || "Failed to fetch profile" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PUT(request) {
   try {

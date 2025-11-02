@@ -12,6 +12,7 @@ const useStats = () => {
   const [stats, setStats] = useState({
     groupsJoined: 0,
     messagesSent: 0,
+    totalStudyMinutes: 0,
   });
   const [lastFetch, setLastFetch] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -19,26 +20,26 @@ const useStats = () => {
   // Fetch user statistics
   const fetchStats = useCallback(async () => {
     if (!user?.id) {
-      console.log("No user ID available for stats fetch");
       return;
     }
 
     try {
       setIsRefreshing(true);
-      console.log("Fetching stats for user:", user.id);
 
-      // Fetch groups and messages in parallel
-      const [groupsData, messagesData] = await Promise.all([
+      // Fetch groups, messages, and profile in parallel
+      const [groupsData, messagesData, profileData] = await Promise.all([
         get("groups/my-groups"),
         get("users/me/messages/stats"),
+        get("auth/profile"),
       ]);
 
       const newStats = {
         groupsJoined: Array.isArray(groupsData) ? groupsData.length : 0,
-        messagesSent: messagesData?.messagesSent || messagesData?.total_messages || 0,
+        messagesSent:
+          messagesData?.messagesSent || messagesData?.total_messages || 0,
+        totalStudyMinutes: profileData?.totalStudyMinutes || 0,
       };
 
-      console.log("Stats updated:", newStats);
       setStats(newStats);
       setLastFetch(new Date());
     } catch (error) {
@@ -48,6 +49,7 @@ const useStats = () => {
         setStats({
           groupsJoined: 0,
           messagesSent: 0,
+          totalStudyMinutes: 0,
         });
       }
     } finally {
