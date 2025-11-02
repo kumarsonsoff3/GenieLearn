@@ -49,7 +49,7 @@ export function TimeAdjustment({
               min="1"
               max="9999"
               value={tempDuration}
-              onChange={e => setTempDuration(parseInt(e.target.value) || 1)}
+              onChange={e => setTempDuration(parseInt(e.target.value, 10) || 1)}
               onKeyDown={e => {
                 if (e.key === "Enter") handleSave();
                 if (e.key === "Escape") handleCancel();
