@@ -179,7 +179,7 @@ export function useTimer({ onComplete }) {
     [isRunning]
   );
 
-  const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
+  const progress = duration > 0 ? ((duration * 60 - timeLeft) / (duration * 60)) * 100 : 0;
 
   return {
     duration,
