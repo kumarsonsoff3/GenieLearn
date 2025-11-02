@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
@@ -17,7 +18,7 @@ import {
   Code2,
   Star,
   GitFork,
-  Eye,
+  Brain,
   Globe,
   Lock,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import GroupOverview from "./GroupOverview";
 import { cn } from "../../lib/utils";
 
 const GroupDashboard = ({ group, onClose, onRefresh }) => {
+  const router = useRouter();
   const { user } = useSelector(state => state.auth);
   const [activeTab, setActiveTab] = useState("overview");
   const [groupData, setGroupData] = useState(group);
@@ -45,6 +47,10 @@ const GroupDashboard = ({ group, onClose, onRefresh }) => {
       onRefresh();
     }
   }, [onRefresh]);
+
+  const handleFocusMode = () => {
+    router.push("/focus");
+  };
 
   const tabs = [
     { id: "overview", label: "Overview", icon: Code2 },
@@ -101,9 +107,14 @@ const GroupDashboard = ({ group, onClose, onRefresh }) => {
 
             {/* Action Buttons - GitHub style */}
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Eye className="h-4 w-4" />
-                Watch
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:text-purple-800"
+                onClick={handleFocusMode}
+              >
+                <Brain className="h-4 w-4" />
+                Focus Mode
               </Button>
               <Button variant="outline" size="sm" className="gap-2">
                 <GitFork className="h-4 w-4" />

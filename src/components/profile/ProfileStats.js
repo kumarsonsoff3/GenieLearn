@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Star } from "lucide-react";
+import { formatStudyTime } from "../../lib/utils";
 
 const ProfileStats = ({ stats, formData, onRefreshStats }) => {
   return (
@@ -43,6 +44,17 @@ const ProfileStats = ({ stats, formData, onRefreshStats }) => {
             </div>
             <span className="text-xl font-bold text-purple-600">
               {formData.subjects_of_interest.length}
+            </span>
+          </div>
+
+          {/* Study Hours */}
+          <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span className="text-sm font-medium">Study Time</span>
+            </div>
+            <span className="text-xl font-bold text-orange-600">
+              {formatStudyTime(stats.totalStudyMinutes)}
             </span>
           </div>
         </div>
