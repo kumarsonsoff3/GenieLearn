@@ -17,7 +17,7 @@ import { BackgroundSelector } from "@/components/focus/BackgroundSelector";
 
 export default function FocusMode() {
   const router = useRouter();
-  const { user, isAuthenticated } = useSelector(state => state.auth);
+  const { isAuthenticated } = useSelector(state => state.auth);
 
   // Custom hooks
   const background = useBackground(1);
