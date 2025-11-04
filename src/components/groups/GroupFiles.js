@@ -37,7 +37,7 @@ import {
 } from "../ui/dropdown-menu";
 import api from "../../utils/enhancedApi";
 import { useToast } from "../ToastProvider";
-import { Storage } from "appwrite";
+import { Storage, ID } from "appwrite";
 import { createRealtimeClient } from "../../lib/appwrite";
 import { BUCKET_ID } from "../../lib/appwrite-config";
 import FilePreviewModal from "./FilePreviewModal";
@@ -48,6 +48,7 @@ const GroupFiles = ({ group, onRefresh }) => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -158,31 +159,58 @@ const GroupFiles = ({ group, onRefresh }) => {
 
     try {
       setUploading(true);
+      setUploadProgress(0);
 
-      // Create FormData to send file to API
-      const formData = new FormData();
-      formData.append("file", fileToUpload);
-      formData.append("description", description || "");
+      // Initialize Appwrite client for direct upload
+      const client = createRealtimeClient();
+      const storage = new Storage(client);
 
-      // Upload via API route (server-side handles Appwrite upload)
-      const response = await fetch(`/api/groups/${group.id}/files`, {
+      // Generate unique file ID
+      const fileId = ID.unique();
+
+      // Upload file directly to Appwrite Storage with progress tracking
+      const uploadedFile = await storage.createFile(
+        BUCKET_ID,
+        fileId,
+        fileToUpload,
+        undefined, // permissions (use bucket defaults)
+        progress => {
+          const percentage = Math.round(
+            (progress.chunksUploaded / progress.chunksTotal) * 100
+          );
+          setUploadProgress(percentage);
+        }
+      );
+
+      // Now create the database record via API
+      const response = await fetch(`/api/groups/${group.id}/files/metadata`, {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          file_id: uploadedFile.$id,
+          filename: fileToUpload.name,
+          original_name: fileToUpload.name,
+          file_type: fileToUpload.type || "application/octet-stream",
+          file_size: fileToUpload.size,
+          description: description || "",
+        }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || "Failed to upload file");
+        throw new Error(error.detail || "Failed to create file metadata");
       }
 
-      const uploadedFile = await response.json();
-
+      const fileDoc = await response.json();
       showSuccess("File uploaded successfully!");
 
-      // Real-time will handle adding the file to the list
+      // Reset form
       setUploadDialogOpen(false);
       setFileToUpload(null);
       setDescription("");
+      setUploadProgress(0);
 
       if (onRefresh) onRefresh();
     } catch (error) {
@@ -190,6 +218,7 @@ const GroupFiles = ({ group, onRefresh }) => {
       showError("Failed to upload file: " + (error.message || "Unknown error"));
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -346,6 +375,19 @@ const GroupFiles = ({ group, onRefresh }) => {
                       className="mt-1"
                     />
                   </div>
+                  {uploading && (
+                    <div className="space-y-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 h-2.5 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+                        Uploading... {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
                   <div className="flex justify-end gap-2">
                     <Button
                       type="button"
