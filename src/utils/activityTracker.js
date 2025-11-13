@@ -142,3 +142,25 @@ export const trackGroupCreate = (groupId, groupName) => {
     { groupId, groupName: escapeHtml(groupName) }
   );
 };
+
+/**
+ * Track note creation
+ */
+export const trackNoteCreate = (noteId, title, sourceType) => {
+  return addActivity(
+    "note_create",
+    `Created note: ${title}`,
+    `Source: ${sourceType}`,
+    { noteId, title: escapeHtml(title), sourceType }
+  );
+};
+
+/**
+ * Track note deletion
+ */
+export const trackNoteDelete = (noteId, title) => {
+  return addActivity("note_delete", `Deleted note: ${title}`, "Note removed", {
+    noteId,
+    title: escapeHtml(title),
+  });
+};
