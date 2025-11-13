@@ -368,6 +368,10 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
                   variant="outline"
                   size="sm"
                   className="gap-2 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200"
+                  aria-label={`Summarize ${
+                    file.filename || file.original_name
+                  } using AI`}
+                  title="Generate an AI-powered summary of this document"
                 >
                   {summarizing ? (
                     <>

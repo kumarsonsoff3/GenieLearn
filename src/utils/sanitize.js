@@ -8,19 +8,19 @@
  * @param {string} str - The string to sanitize
  * @returns {string} - The sanitized string with HTML characters escaped
  */
-export const escapeHtml = (str) => {
-  if (typeof str !== 'string') return str;
-  
+export const escapeHtml = str => {
+  if (typeof str !== "string") return str;
+
   const htmlEscapeMap = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#x27;',
-    '/': '&#x2F;',
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+    "/": "&#x2F;",
   };
-  
-  return str.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char]);
+
+  return str.replace(/[&<>"'/]/g, char => htmlEscapeMap[char]);
 };
 
 /**
@@ -28,16 +28,16 @@ export const escapeHtml = (str) => {
  * @param {object} obj - The object to sanitize
  * @returns {object} - The sanitized object
  */
-export const sanitizeObject = (obj) => {
-  if (!obj || typeof obj !== 'object') return obj;
-  
+export const sanitizeObject = obj => {
+  if (!obj || typeof obj !== "object") return obj;
+
   const sanitized = { ...obj };
-  
+
   for (const key in sanitized) {
-    if (typeof sanitized[key] === 'string') {
+    if (typeof sanitized[key] === "string") {
       sanitized[key] = escapeHtml(sanitized[key]);
     }
   }
-  
+
   return sanitized;
 };

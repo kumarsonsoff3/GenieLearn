@@ -30,6 +30,8 @@ import {
   Search,
   File,
   Download,
+  Image,
+  Video,
 } from "lucide-react";
 import useStats from "../hooks/useStats";
 import { getRecentActivities } from "../utils/activityTracker";
@@ -221,9 +223,9 @@ const Dashboard = () => {
 
   // Helper function to get file icon
   const getFileIcon = fileType => {
-    if (fileType?.includes("image")) return FileText;
+    if (fileType?.includes("image")) return Image;
     if (fileType?.includes("pdf")) return FileText;
-    if (fileType?.includes("video")) return FileText;
+    if (fileType?.includes("video")) return Video;
     return File;
   };
 

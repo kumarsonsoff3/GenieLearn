@@ -29,25 +29,13 @@ export async function POST(request) {
       );
     }
 
-    // Get session and create Appwrite client
+    // Verify user is authenticated
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session");
 
     if (!sessionCookie) {
       return NextResponse.json(
         { error: "Unauthorized - No session found" },
-        { status: 401 }
-      );
-    }
-
-    // Parse session data
-    let sessionData;
-    try {
-      sessionData = JSON.parse(sessionCookie.value);
-    } catch (error) {
-      console.error("Session parse error:", error);
-      return NextResponse.json(
-        { error: "Invalid session format" },
         { status: 401 }
       );
     }

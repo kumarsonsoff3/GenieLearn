@@ -3,7 +3,7 @@
  * Tracks user activities in localStorage and provides methods to retrieve them
  */
 
-import { escapeHtml } from './sanitize';
+import { escapeHtml } from "./sanitize";
 
 const ACTIVITY_STORAGE_KEY = "genielearn_user_activities";
 const MAX_ACTIVITIES = 50; // Keep last 50 activities
@@ -60,8 +60,14 @@ export const getRecentActivities = (limit = 10) => {
   const activities = getActivities();
   return activities.slice(0, limit).map(activity => ({
     ...activity,
-    message: typeof activity.message === 'string' ? escapeHtml(activity.message) : activity.message,
-    detail: typeof activity.detail === 'string' ? escapeHtml(activity.detail) : activity.detail,
+    message:
+      typeof activity.message === "string"
+        ? escapeHtml(activity.message)
+        : activity.message,
+    detail:
+      typeof activity.detail === "string"
+        ? escapeHtml(activity.detail)
+        : activity.detail,
   }));
 };
 
