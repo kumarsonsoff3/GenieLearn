@@ -12,11 +12,20 @@ import {
 } from "../components/ui/card";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
-import { Send, ArrowLeft, Users, Crown } from "lucide-react";
+import {
+  Send,
+  ArrowLeft,
+  Users,
+  Crown,
+  Paperclip,
+  FileText,
+  X,
+} from "lucide-react";
 import api from "../utils/enhancedApi";
 import { createRealtimeClient } from "../lib/appwrite";
 import { DATABASE_ID, COLLECTIONS } from "../lib/appwrite-config";
 import useStats from "../hooks/useStats";
+import FilePreviewModal from "./groups/FilePreviewModal";
 
 const GroupChat = ({ group, onBack, embedded = false }) => {
   const { user } = useSelector(state => state.auth);
@@ -29,6 +38,13 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
   const inputRef = useRef(null);
   const unsubscribeRef = useRef(null);
   const pollingIntervalRef = useRef(null);
+
+  // File mention states
+  const [groupFiles, setGroupFiles] = useState([]);
+  const [showFilePicker, setShowFilePicker] = useState(false);
+  const [mentionedFiles, setMentionedFiles] = useState([]);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [showFilePreview, setShowFilePreview] = useState(false);
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -72,16 +88,32 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
         }
       }
 
-      const formattedMessages = allMessages.map(msg => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-      }));
+      const formattedMessages = allMessages.map(msg => {
+        let parsedFiles = null;
+        if (msg.mentioned_files) {
+          try {
+            if (typeof msg.mentioned_files === "string") {
+              parsedFiles = JSON.parse(msg.mentioned_files);
+            } else {
+              parsedFiles = msg.mentioned_files;
+            }
+          } catch (e) {
+            console.error(
+              "Failed to parse mentioned_files:",
+              e,
+              msg.mentioned_files
+            );
+          }
+        }
+        return {
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+          mentioned_files: parsedFiles,
+        };
+      });
 
       // Messages are already sorted by timestamp from API (Query.orderAsc)
       setMessages(formattedMessages);
-      console.log(
-        `Loaded ${formattedMessages.length} messages for group ${group.name}`
-      );
     } catch (error) {
       console.error("Error loading message history:", error);
       // Fallback: try to load with simple limit if pagination fails
@@ -89,21 +121,38 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
         const response = await api.get(
           `/groups/${group.id}/messages?limit=1000`
         );
-        const formattedMessages = response.data.map(msg => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp),
-        }));
+        const formattedMessages = response.data.map(msg => {
+          let parsedFiles = null;
+          if (msg.mentioned_files) {
+            try {
+              if (typeof msg.mentioned_files === "string") {
+                parsedFiles = JSON.parse(msg.mentioned_files);
+              } else {
+                parsedFiles = msg.mentioned_files;
+              }
+            } catch (e) {
+              console.error(
+                "Fallback: Failed to parse mentioned_files:",
+                e,
+                msg.mentioned_files
+              );
+            }
+          }
+
+          return {
+            ...msg,
+            timestamp: new Date(msg.timestamp),
+            mentioned_files: parsedFiles,
+          };
+        });
         setMessages(formattedMessages);
-        console.log(
-          `Loaded ${formattedMessages.length} messages (fallback) for group ${group.name}`
-        );
       } catch (fallbackError) {
         console.error("Fallback message loading also failed:", fallbackError);
       }
     } finally {
       setLoadingMessages(false);
     }
-  }, [group.id, group.name]);
+  }, [group.id]);
 
   // Helper function to handle real-time message updates
   const handleRealtimeMessage = useCallback(
@@ -125,6 +174,11 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
             ),
             is_system_message: response.payload.is_system_message || false,
             system_message_type: response.payload.system_message_type || null,
+            mentioned_files: response.payload.mentioned_files
+              ? typeof response.payload.mentioned_files === "string"
+                ? JSON.parse(response.payload.mentioned_files)
+                : response.payload.mentioned_files
+              : null,
           };
 
           setMessages(prev => {
@@ -216,15 +270,33 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
     loadMessageHistory();
   }, [group.id, loadMessageHistory]);
 
+  // Load group files for mentions
+  useEffect(() => {
+    const loadGroupFiles = async () => {
+      try {
+        const response = await api.get(`/groups/${group.id}/files`);
+        setGroupFiles(response.data || []);
+      } catch (error) {
+        console.error("Error loading group files:", error);
+      }
+    };
+
+    if (group.id) {
+      loadGroupFiles();
+    }
+  }, [group.id]);
+
   const sendMessage = async e => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && mentionedFiles.length === 0) return;
 
     const messageContent = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
 
     // Optimistic update - clear input immediately for better UX
     setNewMessage("");
+    const filesSnapshot = [...mentionedFiles];
+    setMentionedFiles([]);
     inputRef.current?.focus();
 
     // Add optimistic message to UI immediately
@@ -237,6 +309,7 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
       timestamp: new Date(),
       is_system_message: false,
       isOptimistic: true, // Flag to identify optimistic messages
+      mentioned_files: filesSnapshot,
     };
 
     setMessages(prev => [...prev, optimisticMessage]);
@@ -244,8 +317,9 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
     try {
       // Send message to server (async)
       const response = await api.post("/messages/create", {
-        content: messageContent,
+        content: messageContent || "Shared files",
         group_id: group.id,
+        mentioned_files: filesSnapshot.length > 0 ? filesSnapshot : null,
       });
 
       // Replace optimistic message with real message when server responds
@@ -256,6 +330,7 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
                 ...response.data,
                 timestamp: new Date(response.data.timestamp),
                 isOptimistic: false,
+                mentioned_files: filesSnapshot,
               }
             : msg
         )
@@ -271,10 +346,93 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
 
       // Restore the message content so user can try again
       setNewMessage(messageContent);
+      setMentionedFiles(filesSnapshot);
 
       // Show error feedback (you might want to add a toast notification here)
       alert("Failed to send message. Please try again.");
     }
+  };
+
+  const handleAddFileMention = file => {
+    if (!mentionedFiles.find(f => f.id === file.$id)) {
+      setMentionedFiles(prev => [
+        ...prev,
+        {
+          id: file.$id,
+          file_id: file.file_id, // Appwrite storage file ID
+          name: file.filename,
+          type: file.file_type,
+          size: file.file_size,
+        },
+      ]);
+    }
+    setShowFilePicker(false);
+  };
+
+  const handleRemoveFileMention = fileId => {
+    setMentionedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
+  const handleFileClick = async file => {
+    try {
+      // Check if file has the storage file_id needed for preview
+      // Mentioned files store: {id, file_id, name, type, size}
+      // Full file objects have: {$id, file_id, filename, file_type, file_size}
+
+      if (!file.file_id) {
+        // Need to fetch full file data using the document ID
+        const fileDocId = file.id || file.$id;
+
+        // Try to find in groupFiles cache first
+        const fullFile = groupFiles.find(gf => gf.$id === fileDocId);
+        if (fullFile) {
+          setPreviewFile(fullFile);
+          setShowFilePreview(true);
+          return;
+        }
+
+        // If not in cache, fetch from API
+        const response = await api.get(`/groups/${group.id}/files`);
+        const matchedFile = response.data.find(gf => gf.$id === fileDocId);
+        if (matchedFile) {
+          setPreviewFile(matchedFile);
+          setShowFilePreview(true);
+        } else {
+          alert("File not found");
+        }
+      } else {
+        // File has complete data with file_id
+        // Normalize the file object structure for FilePreviewModal
+        const normalizedFile = {
+          $id: file.$id || file.id,
+          file_id: file.file_id,
+          filename: file.filename || file.name,
+          file_type: file.file_type || file.type,
+          file_size: file.file_size || file.size,
+          original_name: file.original_name || file.filename || file.name,
+        };
+        setPreviewFile(normalizedFile);
+        setShowFilePreview(true);
+      }
+    } catch (error) {
+      console.error("Error loading file:", error);
+      alert("Failed to load file preview: " + error.message);
+    }
+  };
+
+  const getFileIcon = fileType => {
+    if (fileType?.includes("pdf")) return "📄";
+    if (fileType?.includes("image")) return "🖼️";
+    if (fileType?.includes("video")) return "🎥";
+    if (fileType?.includes("audio")) return "🎵";
+    if (fileType?.includes("text")) return "📝";
+    if (fileType?.includes("word") || fileType?.includes("document"))
+      return "📘";
+    if (fileType?.includes("excel") || fileType?.includes("spreadsheet"))
+      return "📊";
+    if (fileType?.includes("powerpoint") || fileType?.includes("presentation"))
+      return "📽️";
+    return "📎";
   };
 
   const handleReconnect = useCallback(() => {
@@ -487,6 +645,47 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
                         >
                           {message.content}
                         </p>
+
+                        {/* Render mentioned files */}
+                        {message.mentioned_files &&
+                          message.mentioned_files.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {message.mentioned_files.map((file, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => handleFileClick(file)}
+                                  className={`flex items-center gap-2 w-full p-2 rounded-md transition-all ${
+                                    message.sender_id === user?.id
+                                      ? "bg-blue-600/50 hover:bg-blue-600/70 text-white"
+                                      : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+                                  }`}
+                                >
+                                  <span className="text-lg">
+                                    {getFileIcon(file.type)}
+                                  </span>
+                                  <div className="flex-1 text-left min-w-0">
+                                    <p className="text-xs font-medium truncate">
+                                      {file.name}
+                                    </p>
+                                    {file.size && (
+                                      <p
+                                        className={`text-xs ${
+                                          message.sender_id === user?.id
+                                            ? "text-blue-100"
+                                            : "text-gray-500"
+                                        }`}
+                                      >
+                                        {(file.size / (1024 * 1024)).toFixed(2)}{" "}
+                                        MB
+                                      </p>
+                                    )}
+                                  </div>
+                                  <FileText className="h-4 w-4 shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
                         <p
                           className={`text-xs mt-1 flex items-center gap-1 ${
                             message.sender_id === user?.id
@@ -515,18 +714,99 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
 
       {/* Message Input */}
       <div className="border-t bg-gradient-to-r from-blue-50 to-orange-50 p-4">
-        <form onSubmit={sendMessage} className="flex space-x-3">
-          <Input
-            ref={inputRef}
-            value={newMessage}
-            onChange={e => setNewMessage(e.target.value)}
-            placeholder={isConnected ? "Type a message..." : "Connecting..."}
-            disabled={!isConnected}
-            className="flex-1 border-2 focus:border-blue-300 bg-white/80 backdrop-blur-sm"
-          />
+        {/* File mentions chips */}
+        {mentionedFiles.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {mentionedFiles.map((file, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs border border-blue-200"
+              >
+                <span>{getFileIcon(file.type)}</span>
+                <span className="max-w-[150px] truncate">{file.name}</span>
+                <button
+                  onClick={() => handleRemoveFileMention(file.id)}
+                  className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={sendMessage} className="flex space-x-2">
+          <div className="relative flex-1 flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilePicker(!showFilePicker)}
+              className="shrink-0 border-2 hover:border-blue-300 hover:bg-blue-50"
+              title="Attach file from group"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+
+            {/* File picker dropdown */}
+            {showFilePicker && (
+              <div className="absolute bottom-full left-0 mb-2 w-80 max-h-64 overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-2 border-b bg-gray-50">
+                  <p className="text-xs font-medium text-gray-700">
+                    Select files to mention
+                  </p>
+                </div>
+                {groupFiles.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500">
+                    No files in this group yet
+                  </div>
+                ) : (
+                  <div className="p-1">
+                    {groupFiles.map(file => (
+                      <button
+                        key={file.$id}
+                        onClick={() => handleAddFileMention(file)}
+                        className="w-full flex items-center gap-2 p-2 hover:bg-gray-100 rounded-md text-left transition-colors"
+                        disabled={mentionedFiles.find(f => f.id === file.$id)}
+                      >
+                        <span className="text-lg">
+                          {getFileIcon(file.file_type)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {file.filename}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {(file.file_size / (1024 * 1024)).toFixed(2)} MB
+                          </p>
+                        </div>
+                        {mentionedFiles.find(f => f.id === file.$id) && (
+                          <Badge variant="secondary" className="text-xs">
+                            Added
+                          </Badge>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Input
+              ref={inputRef}
+              value={newMessage}
+              onChange={e => setNewMessage(e.target.value)}
+              placeholder={isConnected ? "Type a message..." : "Connecting..."}
+              disabled={!isConnected}
+              className="flex-1 border-2 focus:border-blue-300 bg-white/80 backdrop-blur-sm"
+            />
+          </div>
           <Button
             type="submit"
-            disabled={!newMessage.trim() || !isConnected}
+            disabled={
+              (!newMessage.trim() && mentionedFiles.length === 0) ||
+              !isConnected
+            }
             size="sm"
             className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4"
           >
@@ -534,6 +814,18 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
           </Button>
         </form>
       </div>
+
+      {/* File Preview Modal */}
+      {showFilePreview && previewFile && (
+        <FilePreviewModal
+          file={previewFile}
+          isOpen={showFilePreview}
+          onClose={() => {
+            setShowFilePreview(false);
+            setPreviewFile(null);
+          }}
+        />
+      )}
     </div>
   );
 };

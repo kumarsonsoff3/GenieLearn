@@ -25,7 +25,7 @@ export async function POST(request) {
       );
     }
 
-    const { content, group_id } = await request.json();
+    const { content, group_id, mentioned_files = null } = await request.json();
 
     // Validation
     if (!content || !content.trim()) {
@@ -45,6 +45,14 @@ export async function POST(request) {
     if (!group_id) {
       return NextResponse.json(
         { detail: "Group ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate mentioned files if provided
+    if (mentioned_files && !Array.isArray(mentioned_files)) {
+      return NextResponse.json(
+        { detail: "mentioned_files must be an array" },
         { status: 400 }
       );
     }
@@ -91,21 +99,25 @@ export async function POST(request) {
       );
     }
 
+    // Create message document data
+    const messageData = {
+      content: content.trim(),
+      group_id,
+      sender_id: userId,
+      sender_name: userName,
+      user_id: userId, // Required by Appwrite schema
+      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(), // Required by Appwrite schema
+      message_type: "text", // Required by Appwrite schema
+      mentioned_files: mentioned_files ? JSON.stringify(mentioned_files) : null, // Store as JSON string
+    };
+
     // Create message
     const message = await databases.createDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
       ID.unique(),
-      {
-        content: content.trim(),
-        group_id,
-        sender_id: userId,
-        sender_name: userName,
-        user_id: userId, // Required by Appwrite schema
-        timestamp: new Date().toISOString(),
-        created_at: new Date().toISOString(), // Required by Appwrite schema
-        message_type: "text", // Required by Appwrite schema
-      }
+      messageData
     );
 
     return NextResponse.json({
@@ -115,6 +127,7 @@ export async function POST(request) {
       sender_id: message.sender_id,
       sender_name: message.sender_name,
       timestamp: message.timestamp,
+      mentioned_files: mentioned_files || [], // Return as array for client
     });
   } catch (error) {
     console.error("Create message error:", error);

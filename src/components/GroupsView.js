@@ -141,10 +141,6 @@ const GroupsView = () => {
     })
   );
 
-  console.log("Debug - Public Groups:", publicGroups.length);
-  console.log("Debug - My Groups:", myGroups.length);
-  console.log("Debug - Filtered Public Groups:", filteredPublicGroups.length);
-
   if (loading) {
     return (
       <Layout>
