@@ -15,12 +15,15 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  BookmarkPlus,
+  CheckCircle2,
 } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../ui/collapsible";
+import { trackNoteCreate } from "../../utils/activityTracker";
 
 const FilePreviewModal = ({ file, isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
@@ -30,6 +33,8 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
   const [summaryError, setSummaryError] = useState(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [currentFileId, setCurrentFileId] = useState(null);
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
 
   if (!file) return null;
 
@@ -42,7 +47,56 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
     setSummaryOpen(false);
     setLoading(true);
     setError(null);
+    setSavingNote(false);
+    setNoteSaved(false);
   }
+
+  // Handle saving summary to notes
+  const handleSaveToNotes = async () => {
+    if (!summary) return;
+
+    setSavingNote(true);
+    setSummaryError(null);
+
+    try {
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: `PDF Summary - ${file.filename || file.original_name}`,
+          content: summary,
+          source_type: "pdf",
+          file_id: getStorageFileId(),
+          tags: ["pdf", "summary"],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save note");
+      }
+
+      const data = await response.json();
+
+      // Track activity
+      if (data.note) {
+        trackNoteCreate(data.note.$id, data.note.title, "pdf");
+      }
+
+      setNoteSaved(true);
+
+      // Reset saved state after 3 seconds
+      setTimeout(() => {
+        setNoteSaved(false);
+      }, 3000);
+    } catch (err) {
+      setSummaryError(err.message);
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   // Handle AI summarization
   const handleSummarize = async () => {
@@ -460,11 +514,33 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm max-h-96 overflow-y-auto">
-                    <div className="prose prose-sm max-w-none text-gray-700">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {summary}
-                      </ReactMarkdown>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">
+                        AI-generated summary
+                      </span>
+                      <Button
+                        onClick={handleSaveToNotes}
+                        size="sm"
+                        variant="outline"
+                        disabled={savingNote || noteSaved}
+                      >
+                        {savingNote ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : noteSaved ? (
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                        ) : (
+                          <BookmarkPlus className="h-3 w-3 mr-1" />
+                        )}
+                        {noteSaved ? "Saved!" : "Save to Notes"}
+                      </Button>
+                    </div>
+                    <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm max-h-96 overflow-y-auto">
+                      <div className="prose prose-sm max-w-none text-gray-700">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {summary}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 )}

@@ -16,6 +16,8 @@ import { Badge } from "../components/ui/badge";
 import Layout from "../components/Layout";
 import { CreateGroupModal } from "../components/shared";
 import FilePreviewModal from "../components/groups/FilePreviewModal";
+import YouTubeSummaryCard from "../components/dashboard/YouTubeSummaryCard";
+import PersonalNotes from "../components/dashboard/PersonalNotes";
 import { formatStudyTime, getTimeAgo, getFileTypeInfo } from "../lib/utils";
 import {
   Users,
@@ -34,6 +36,7 @@ import {
   Video,
   FileArchive,
   FileCode,
+  Sparkles,
 } from "lucide-react";
 import useStats from "../hooks/useStats";
 import { getRecentActivities } from "../utils/activityTracker";
@@ -294,6 +297,31 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* AI Summarizer Section - Featured */}
+            <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50/50 via-blue-50/30 to-white shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold text-gray-900">
+                      AI YouTube Summarizer
+                    </CardTitle>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Get instant AI-powered video summaries
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <YouTubeSummaryCard compact={true} />
+              </CardContent>
+            </Card>
+
+            {/* Personal Notes Section */}
+            <PersonalNotes limit={6} showCreateButton={false} />
 
             {/* Recent Files */}
             <Card className="border border-gray-200">

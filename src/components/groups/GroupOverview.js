@@ -27,6 +27,7 @@ import api from "../../utils/enhancedApi";
 import { LoadingSpinner } from "../ui/loading-spinner";
 import FilePreviewModal from "./FilePreviewModal";
 import { getFileTypeInfo } from "../../lib/utils";
+import YouTubeSummaryCard from "../dashboard/YouTubeSummaryCard";
 
 const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
   const { user } = useSelector(state => state.auth);
@@ -145,6 +146,9 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
             </p>
           </div>
         </div>
+
+        {/* YouTube Summary Card */}
+        <YouTubeSummaryCard />
 
         {/* Recent Files Section */}
         <div className="bg-white rounded-lg border">
