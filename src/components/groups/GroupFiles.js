@@ -41,6 +41,7 @@ import { Storage, ID } from "appwrite";
 import { createRealtimeClient } from "../../lib/appwrite";
 import { BUCKET_ID } from "../../lib/appwrite-config";
 import FilePreviewModal from "./FilePreviewModal";
+import { trackFileUpload } from "../../utils/activityTracker";
 
 const GroupFiles = ({ group, onRefresh }) => {
   const { user } = useSelector(state => state.auth);
@@ -205,6 +206,9 @@ const GroupFiles = ({ group, onRefresh }) => {
 
       const fileDoc = await response.json();
       showSuccess("File uploaded successfully!");
+
+      // Track file upload activity
+      trackFileUpload(group.id, group.name, fileToUpload.name);
 
       // Reset form
       setUploadDialogOpen(false);

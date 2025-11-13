@@ -85,34 +85,38 @@ const Layout = React.memo(({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-2">
-              <Image
-                src="/logo.png"
-                alt="GenieLearn Logo"
-                width={40}
-                height={40}
-                className="h-10 w-10 object-contain"
-              />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
-                GenieLearn
-              </h1>
-            </div>
+          <div className="flex justify-between items-center py-3">
+            <div className="flex items-center space-x-8">
+              <Link
+                href="/dashboard"
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+              >
+                <Image
+                  src="/logo.png"
+                  alt="GenieLearn Logo"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 object-contain"
+                />
+                <h1 className="text-xl font-semibold text-gray-900">
+                  GenieLearn
+                </h1>
+              </Link>
 
-            <div className="flex items-center space-x-4">
-              <nav className="hidden md:flex items-center space-x-6">
+              <nav className="hidden md:flex items-center space-x-1">
                 {navItems.map(item => {
                   const Icon = item.icon;
+                  const isActive = pathname === item.path;
                   return (
                     <Link
                       key={item.path}
                       href={item.path}
-                      className={`flex items-center space-x-2 transition-colors ${
-                        pathname === item.path
-                          ? "text-blue-600 font-medium"
-                          : "text-gray-600 hover:text-blue-600"
+                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        isActive
+                          ? "bg-gray-100 text-gray-900"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -121,22 +125,24 @@ const Layout = React.memo(({ children }) => {
                   );
                 })}
               </nav>
+            </div>
 
+            <div className="flex items-center space-x-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100 touch-manipulation"
+                    className="relative h-8 w-8 rounded-full p-0 hover:bg-gray-100 touch-manipulation"
                   >
-                    <Avatar className="h-9 w-9 border-2 border-gray-200 hover:border-blue-300 transition-colors">
-                      <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                    <Avatar className="h-8 w-8 border border-gray-300">
+                      <AvatarFallback className="text-xs font-semibold bg-gray-900 text-white">
                         {userInitial}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-64 z-[9999] shadow-xl border bg-white"
+                  className="w-64 z-[9999] shadow-lg border border-gray-200 bg-white"
                   align="end"
                   forceMount
                   sideOffset={8}
@@ -146,8 +152,8 @@ const Layout = React.memo(({ children }) => {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-2 p-2">
                       <div className="flex items-center space-x-3">
-                        <Avatar className="h-12 w-12 border-2 border-gray-200">
-                          <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                        <Avatar className="h-10 w-10 border border-gray-300">
+                          <AvatarFallback className="text-sm font-semibold bg-gray-900 text-white">
                             {userInitial}
                           </AvatarFallback>
                         </Avatar>

@@ -23,20 +23,20 @@ const ProfileForm = ({
   return (
     <div className="space-y-6">
       {/* Basic Information Card */}
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gray-50 rounded-t-lg">
-          <CardTitle className="flex items-center space-x-2">
-            <User className="h-5 w-5 text-blue-600" />
+      <Card className="border border-gray-200">
+        <CardHeader className="border-b border-gray-200 pb-4">
+          <CardTitle className="text-base font-semibold text-gray-900 flex items-center space-x-2">
+            <User className="h-4 w-4 text-gray-600" />
             <span>Personal Information</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <form onSubmit={onSubmit} className="space-y-6">
+        <CardContent className="p-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-4">
               <div>
                 <Label
                   htmlFor="name"
-                  className="text-sm font-semibold text-gray-700"
+                  className="text-sm font-medium text-gray-700"
                 >
                   Full Name
                 </Label>
@@ -47,65 +47,67 @@ const ProfileForm = ({
                     onChange={e => updateField("name", e.target.value)}
                     placeholder="Enter your full name"
                     required
-                    className="mt-1"
+                    className="mt-1 border-gray-300"
                   />
                 ) : (
-                  <p className="text-lg font-medium mt-1 p-3 bg-gray-50 rounded-md">
+                  <p className="text-sm mt-1 p-2 bg-gray-50 rounded border border-gray-200">
                     {user.name}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label className="text-sm font-semibold text-gray-700">
+                <Label className="text-sm font-medium text-gray-700">
                   Email Address
                 </Label>
-                <div className="mt-1 p-3 bg-gray-50 rounded-md flex items-center justify-between">
-                  <span className="text-lg">{user.email}</span>
-                  <Badge variant="secondary">Verified</Badge>
+                <div className="mt-1 p-2 bg-gray-50 rounded border border-gray-200 flex items-center justify-between">
+                  <span className="text-sm">{user.email}</span>
+                  <Badge variant="secondary" className="text-xs bg-gray-100">
+                    Verified
+                  </Badge>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Email cannot be changed for security reasons
                 </p>
               </div>
             </div>
 
             {editing && (
-              <>
-                <Separator />
-                <div className="flex justify-end space-x-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onCancel}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {loading ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
-              </>
+              <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onCancel}
+                  disabled={loading}
+                  className="border-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={loading}
+                  className="bg-gray-900 hover:bg-gray-800"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
             )}
           </form>
         </CardContent>
       </Card>
 
       {/* Subjects of Interest Card */}
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gray-50 rounded-t-lg">
-          <CardTitle className="flex items-center space-x-2">
-            <BookOpen className="h-5 w-5 text-purple-600" />
-            <span>Subjects of Interest</span>
+      <Card className="border border-gray-200">
+        <CardHeader className="border-b border-gray-200 pb-4">
+          <CardTitle className="text-base font-semibold text-gray-900 flex items-center space-x-2">
+            <BookOpen className="h-4 w-4 text-gray-600" />
+            <span>Interests</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {formData.subjects_of_interest.length > 0 ? (
@@ -113,15 +115,14 @@ const ProfileForm = ({
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="text-sm py-2 px-3 bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                    className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200"
                   >
-                    <BookOpen className="h-3 w-3 mr-1" />
                     <span>{subject}</span>
                     {editing && (
                       <button
                         type="button"
                         onClick={() => onRemoveSubject(subject)}
-                        className="ml-2 hover:text-red-600 transition-colors"
+                        className="ml-1 hover:text-red-600"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -129,37 +130,36 @@ const ProfileForm = ({
                   </Badge>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <BookOpen className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-lg">No subjects added yet</p>
-                  <p className="text-sm">
-                    Add subjects to help us recommend relevant groups
+                <div className="text-center py-6 text-gray-500">
+                  <BookOpen className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No interests added yet</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Add interests to find relevant groups
                   </p>
                 </div>
               )}
             </div>
 
             {editing && (
-              <div className="space-y-3">
-                <Separator />
+              <div className="space-y-3 pt-3 border-t border-gray-200">
                 <div className="flex space-x-2">
                   <Input
                     value={newSubject}
                     onChange={e => setNewSubject(e.target.value)}
-                    placeholder="Add a subject (e.g., Mathematics, Physics, Computer Science)"
+                    placeholder="Add an interest"
                     onKeyPress={e =>
                       e.key === "Enter" && (e.preventDefault(), onAddSubject())
                     }
-                    className="flex-1"
+                    className="flex-1 border-gray-300"
                   />
                   <Button
                     type="button"
                     onClick={onAddSubject}
                     variant="outline"
-                    className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                    size="sm"
+                    className="border-gray-300 hover:bg-gray-50"
                   >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -169,10 +169,11 @@ const ProfileForm = ({
               <Button
                 onClick={onEditClick}
                 variant="outline"
-                className="w-full border-purple-300 text-purple-600 hover:bg-purple-50"
+                size="sm"
+                className="w-full border-gray-300 hover:bg-gray-50"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Your First Subject
+                Add interests
               </Button>
             )}
           </div>

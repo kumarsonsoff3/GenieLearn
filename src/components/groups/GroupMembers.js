@@ -166,11 +166,13 @@ const GroupMembers = ({ group, isCreator, onRefresh }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card>
-        <CardHeader>
+      <Card className="border border-gray-200">
+        <CardHeader className="border-b border-gray-200 pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Group Members</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">
+                Group Members
+              </CardTitle>
               <p className="text-sm text-gray-600 mt-1">
                 {members.length} {members.length === 1 ? "member" : "members"}
               </p>
@@ -181,7 +183,7 @@ const GroupMembers = ({ group, isCreator, onRefresh }) => {
                 onOpenChange={setInviteDialogOpen}
               >
                 <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-purple-600 to-blue-600">
+                  <Button className="bg-gray-900 hover:bg-gray-800">
                     <UserPlus className="h-4 w-4 mr-2" />
                     Invite Members
                   </Button>
@@ -210,7 +212,7 @@ const GroupMembers = ({ group, isCreator, onRefresh }) => {
                       </Button>
                       <Button
                         type="submit"
-                        className="bg-gradient-to-r from-purple-600 to-blue-600"
+                        className="bg-gray-900 hover:bg-gray-800"
                       >
                         Send Invitation
                       </Button>
@@ -221,14 +223,14 @@ const GroupMembers = ({ group, isCreator, onRefresh }) => {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search members..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 border-gray-300"
             />
           </div>
         </CardContent>
@@ -258,24 +260,24 @@ const GroupMembers = ({ group, isCreator, onRefresh }) => {
             return (
               <Card
                 key={member.$id}
-                className="hover:shadow-md transition-shadow"
+                className="border border-gray-200 hover:border-gray-300 transition-colors"
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-12 w-12 border-2 border-purple-200">
-                      <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
+                    <Avatar className="h-10 w-10 border border-gray-300">
+                      <AvatarFallback className="bg-gray-900 text-white text-sm font-semibold">
                         {getInitials(member.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold truncate">
+                        <h4 className="text-sm font-semibold text-gray-900 truncate">
                           {member.name || "Unknown User"}
                           {isCurrentUser && " (You)"}
                         </h4>
                         <Badge
-                          variant={getRoleBadgeVariant(memberRole)}
-                          className="gap-1"
+                          variant="secondary"
+                          className="gap-1 text-xs bg-gray-100 text-gray-700"
                         >
                           {getRoleIcon(memberRole)}
                           {memberRole}

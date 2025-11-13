@@ -99,94 +99,105 @@ const GroupInsights = ({ group }) => {
     <div className="space-y-6">
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <MessageCircle className="h-8 w-8 text-purple-600" />
-              <Badge variant="secondary">
+        <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <MessageCircle className="h-5 w-5 text-gray-600" />
+              <Badge
+                variant="secondary"
+                className="text-xs bg-gray-100 text-gray-700"
+              >
                 {insights?.messagesThisWeek || 0} this week
               </Badge>
             </div>
-            <h3 className="text-2xl font-bold">
+            <h3 className="text-2xl font-semibold text-gray-900">
               {insights?.totalMessages || 0}
             </h3>
-            <p className="text-sm text-gray-600">Total Messages</p>
+            <p className="text-sm text-gray-600 mt-1">Total Messages</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <FileText className="h-8 w-8 text-blue-600" />
-              <Badge variant="secondary">
+        <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <FileText className="h-5 w-5 text-gray-600" />
+              <Badge
+                variant="secondary"
+                className="text-xs bg-gray-100 text-gray-700"
+              >
                 {insights?.filesThisWeek || 0} this week
               </Badge>
             </div>
-            <h3 className="text-2xl font-bold">{insights?.totalFiles || 0}</h3>
-            <p className="text-sm text-gray-600">Files Shared</p>
+            <h3 className="text-2xl font-semibold text-gray-900">
+              {insights?.totalFiles || 0}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">Files Shared</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <Users className="h-8 w-8 text-green-600" />
-              <Badge variant="secondary">
+        <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <Users className="h-5 w-5 text-gray-600" />
+              <Badge
+                variant="secondary"
+                className="text-xs bg-gray-100 text-gray-700"
+              >
                 {insights?.newMembersThisWeek || 0} this week
               </Badge>
             </div>
-            <h3 className="text-2xl font-bold">
+            <h3 className="text-2xl font-semibold text-gray-900">
               {insights?.totalMembers || 0}
             </h3>
-            <p className="text-sm text-gray-600">Total Members</p>
+            <p className="text-sm text-gray-600 mt-1">Total Members</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <Zap className="h-8 w-8 text-yellow-600" />
+        <Card className="border border-gray-200 hover:border-gray-300 transition-colors">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <Activity className="h-5 w-5 text-gray-600" />
               {getTrendIcon(insights?.activityTrend)}
             </div>
-            <h3 className={`text-2xl font-bold ${activityLevel.color}`}>
+            <h3 className="text-2xl font-semibold text-gray-900">
               {activityLevel.label}
             </h3>
-            <p className="text-sm text-gray-600">Group Activity</p>
+            <p className="text-sm text-gray-600 mt-1">Group Activity</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Activity Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+        <Card className="border border-gray-200">
+          <CardHeader className="border-b border-gray-200 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+              <Clock className="h-4 w-4 text-gray-600" />
               Activity Metrics
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
               <span className="text-sm text-gray-700">Avg. Messages/Day</span>
-              <span className="text-lg font-semibold text-purple-600">
+              <span className="text-base font-semibold text-gray-900">
                 {insights?.averageMessagesPerDay?.toFixed(1) || 0}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
               <span className="text-sm text-gray-700">Most Active Day</span>
-              <span className="text-lg font-semibold text-blue-600">
+              <span className="text-base font-semibold text-gray-900">
                 {insights?.mostActiveDay || "N/A"}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
               <span className="text-sm text-gray-700">Group Created</span>
-              <span className="text-lg font-semibold text-green-600">
+              <span className="text-base font-semibold text-gray-900">
                 {formatDate(group.created_at)}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
               <span className="text-sm text-gray-700">Days Active</span>
-              <span className="text-lg font-semibold text-yellow-600">
+              <span className="text-base font-semibold text-gray-900">
                 {Math.floor(
                   (new Date() - new Date(group.created_at)) /
                     (1000 * 60 * 60 * 24)
@@ -196,43 +207,36 @@ const GroupInsights = ({ group }) => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
+        <Card className="border border-gray-200">
+          <CardHeader className="border-b border-gray-200 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+              <Award className="h-4 w-4 text-gray-600" />
               Top Contributors
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             {insights?.topContributors &&
             insights.topContributors.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {insights.topContributors
                   .slice(0, 5)
                   .map((contributor, index) => (
                     <div
                       key={contributor.userId || index}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                            index === 0
-                              ? "bg-yellow-500"
-                              : index === 1
-                              ? "bg-gray-400"
-                              : index === 2
-                              ? "bg-orange-600"
-                              : "bg-purple-500"
-                          }`}
-                        >
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-900 text-white text-xs font-semibold">
                           {index + 1}
                         </div>
-                        <span className="font-medium">
+                        <span className="text-sm font-medium text-gray-900">
                           {contributor.name || "Unknown"}
                         </span>
                       </div>
-                      <Badge variant="secondary">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-gray-100 text-gray-700"
+                      >
                         {contributor.messageCount || 0} messages
                       </Badge>
                     </div>
@@ -249,35 +253,35 @@ const GroupInsights = ({ group }) => {
       </div>
 
       {/* Growth Trend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+      <Card className="border border-gray-200">
+        <CardHeader className="border-b border-gray-200 pb-4">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+            <BarChart3 className="h-4 w-4 text-gray-600" />
             Growth & Engagement
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4">
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-              <TrendingUp className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-              <p className="text-2xl font-bold text-purple-700">
+            <div className="text-center p-4 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
+              <TrendingUp className="h-6 w-6 mx-auto mb-2 text-gray-600" />
+              <p className="text-xl font-semibold text-gray-900">
                 {insights?.engagementRate || "0%"}
               </p>
-              <p className="text-sm text-gray-600">Engagement Rate</p>
+              <p className="text-xs text-gray-600 mt-1">Engagement Rate</p>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-              <Activity className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <p className="text-2xl font-bold text-blue-700">
+            <div className="text-center p-4 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
+              <Activity className="h-6 w-6 mx-auto mb-2 text-gray-600" />
+              <p className="text-xl font-semibold text-gray-900">
                 {insights?.activeMembers || 0}
               </p>
-              <p className="text-sm text-gray-600">Active Members</p>
+              <p className="text-xs text-gray-600 mt-1">Active Members</p>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-              <Calendar className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <p className="text-2xl font-bold text-green-700">
+            <div className="text-center p-4 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
+              <Calendar className="h-6 w-6 mx-auto mb-2 text-gray-600" />
+              <p className="text-xl font-semibold text-gray-900">
                 {insights?.activeDays || 0}
               </p>
-              <p className="text-sm text-gray-600">Active Days</p>
+              <p className="text-xs text-gray-600 mt-1">Active Days</p>
             </div>
           </div>
         </CardContent>

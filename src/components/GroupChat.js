@@ -26,6 +26,7 @@ import { createRealtimeClient } from "../lib/appwrite";
 import { DATABASE_ID, COLLECTIONS } from "../lib/appwrite-config";
 import useStats from "../hooks/useStats";
 import FilePreviewModal from "./groups/FilePreviewModal";
+import { trackMessage } from "../utils/activityTracker";
 
 const GroupChat = ({ group, onBack, embedded = false }) => {
   const { user } = useSelector(state => state.auth);
@@ -335,6 +336,9 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
             : msg
         )
       );
+
+      // Track message activity
+      trackMessage(group.id, group.name);
 
       // Increment message count for stats
       incrementMessageCount();
