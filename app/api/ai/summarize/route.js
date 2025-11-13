@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { cookies } from "next/headers";
-import { createSessionClient } from "@/lib/appwrite-server";
 import PDFParser from "pdf2json";
 
 // Initialize Gemini AI
