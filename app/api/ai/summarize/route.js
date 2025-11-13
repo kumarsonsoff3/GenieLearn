@@ -202,7 +202,7 @@ export async function POST(request) {
       return NextResponse.json(
         {
           error:
-            "Word document text extraction requires additional setup. Install 'mammoth' package for DOCX support.",
+            "Word document summarization is not currently supported. Please convert your document to PDF or TXT format and try again.",
         },
         { status: 501 }
       );
