@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import useApi from "./useApi";
 import useAuth from "./useAuth";
 import { trackProfileUpdate } from "../utils/activityTracker";
+import { arraysEqual } from "../lib/utils";
 
 /**
  * Custom hook for managing profile form and editing logic
@@ -126,8 +127,10 @@ const useProfileForm = () => {
 
     return (
       formData.name !== (user.name || "") ||
-      JSON.stringify(formData.subjects_of_interest) !==
-        JSON.stringify(user.subjects_of_interest || [])
+      !arraysEqual(
+        formData.subjects_of_interest,
+        user.subjects_of_interest || []
+      )
     );
   }, [user, formData]);
 
@@ -175,8 +178,10 @@ const useProfileForm = () => {
           trackProfileUpdate("name", `Changed name to ${submitData.name}`);
         }
         if (
-          JSON.stringify(submitData.subjects_of_interest) !==
-          JSON.stringify(user.subjects_of_interest)
+          !arraysEqual(
+            submitData.subjects_of_interest,
+            user.subjects_of_interest
+          )
         ) {
           trackProfileUpdate(
             "interests",

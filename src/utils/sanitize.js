@@ -24,18 +24,35 @@ export const escapeHtml = str => {
 };
 
 /**
- * Sanitize an object by escaping HTML in all string properties
- * @param {object} obj - The object to sanitize
- * @returns {object} - The sanitized object
+ * Recursively sanitize an object by escaping HTML in all string properties
+ * Handles nested objects and arrays to prevent XSS in complex data structures
+ * @param {*} data - The data to sanitize (object, array, string, or primitive)
+ * @returns {*} - The sanitized data with the same structure
  */
-export const sanitizeObject = obj => {
-  if (!obj || typeof obj !== "object") return obj;
+export const sanitizeObject = data => {
+  // Handle null and undefined
+  if (data == null) return data;
 
-  const sanitized = { ...obj };
+  // Handle primitives
+  if (typeof data === "string") {
+    return escapeHtml(data);
+  }
 
-  for (const key in sanitized) {
-    if (typeof sanitized[key] === "string") {
-      sanitized[key] = escapeHtml(sanitized[key]);
+  // Handle non-object primitives (numbers, booleans, etc.)
+  if (typeof data !== "object") {
+    return data;
+  }
+
+  // Handle arrays recursively
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeObject(item));
+  }
+
+  // Handle objects recursively
+  const sanitized = {};
+  for (const key in data) {
+    if (data.hasOwnProperty(key)) {
+      sanitized[key] = sanitizeObject(data[key]);
     }
   }
 

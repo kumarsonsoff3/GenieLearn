@@ -54,21 +54,11 @@ export const addActivity = (type, message, detail, metadata = {}) => {
 
 /**
  * Get recent activities (default: last 10)
- * Sanitizes the data as a defense-in-depth measure
+ * Data is already sanitized when stored via addActivity
  */
 export const getRecentActivities = (limit = 10) => {
   const activities = getActivities();
-  return activities.slice(0, limit).map(activity => ({
-    ...activity,
-    message:
-      typeof activity.message === "string"
-        ? escapeHtml(activity.message)
-        : activity.message,
-    detail:
-      typeof activity.detail === "string"
-        ? escapeHtml(activity.detail)
-        : activity.detail,
-  }));
+  return activities.slice(0, limit);
 };
 
 /**

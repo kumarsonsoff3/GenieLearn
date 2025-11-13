@@ -415,18 +415,33 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
         {(summary || summaryError) && (
           <div className="px-6 py-3 border-b bg-gradient-to-r from-blue-50 to-purple-50 shrink-0">
             <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
+              <CollapsibleTrigger
+                className="flex items-center justify-between w-full text-left"
+                aria-label={
+                  summaryOpen ? "Collapse AI summary" : "Expand AI summary"
+                }
+              >
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-blue-600" />
                   <span className="font-medium text-gray-900">AI Summary</span>
                 </div>
                 {summaryOpen ? (
-                  <ChevronUp className="h-4 w-4 text-gray-600" />
+                  <ChevronUp
+                    className="h-4 w-4 text-gray-600"
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-gray-600" />
+                  <ChevronDown
+                    className="h-4 w-4 text-gray-600"
+                    aria-hidden="true"
+                  />
                 )}
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-3">
+              <CollapsibleContent
+                className="mt-3"
+                role="region"
+                aria-label="AI-generated summary content"
+              >
                 {summaryError ? (
                   <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
                     <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />

@@ -16,7 +16,7 @@ import { Badge } from "../components/ui/badge";
 import Layout from "../components/Layout";
 import { CreateGroupModal } from "../components/shared";
 import FilePreviewModal from "../components/groups/FilePreviewModal";
-import { formatStudyTime } from "../lib/utils";
+import { formatStudyTime, getTimeAgo, getFileTypeInfo } from "../lib/utils";
 import {
   Users,
   MessageCircle,
@@ -32,28 +32,11 @@ import {
   Download,
   Image,
   Video,
+  FileArchive,
+  FileCode,
 } from "lucide-react";
 import useStats from "../hooks/useStats";
 import { getRecentActivities } from "../utils/activityTracker";
-
-// Helper function to format time ago
-const getTimeAgo = timestamp => {
-  const now = new Date();
-  const diff = now - new Date(timestamp);
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days}d ago`;
-  return new Date(timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-};
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -221,12 +204,22 @@ const Dashboard = () => {
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   };
 
-  // Helper function to get file icon
+  // Helper function to get file icon component
   const getFileIcon = fileType => {
-    if (fileType?.includes("image")) return Image;
-    if (fileType?.includes("pdf")) return FileText;
-    if (fileType?.includes("video")) return Video;
-    return File;
+    const { iconType } = getFileTypeInfo(fileType);
+    const iconMap = {
+      image: Image,
+      pdf: FileText,
+      video: Video,
+      audio: FileText,
+      code: FileCode,
+      document: FileText,
+      spreadsheet: FileText,
+      presentation: FileText,
+      archive: FileArchive,
+      file: File,
+    };
+    return iconMap[iconType] || File;
   };
 
   if (loading || isInitializing) {

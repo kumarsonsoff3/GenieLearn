@@ -27,6 +27,7 @@ import { DATABASE_ID, COLLECTIONS } from "../lib/appwrite-config";
 import useStats from "../hooks/useStats";
 import FilePreviewModal from "./groups/FilePreviewModal";
 import { trackMessage } from "../utils/activityTracker";
+import { getFileTypeInfo } from "../lib/utils";
 
 const GroupChat = ({ group, onBack, embedded = false }) => {
   const { user } = useSelector(state => state.auth);
@@ -424,20 +425,7 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
     }
   };
 
-  const getFileIcon = fileType => {
-    if (fileType?.includes("pdf")) return "📄";
-    if (fileType?.includes("image")) return "🖼️";
-    if (fileType?.includes("video")) return "🎥";
-    if (fileType?.includes("audio")) return "🎵";
-    if (fileType?.includes("text")) return "📝";
-    if (fileType?.includes("word") || fileType?.includes("document"))
-      return "📘";
-    if (fileType?.includes("excel") || fileType?.includes("spreadsheet"))
-      return "📊";
-    if (fileType?.includes("powerpoint") || fileType?.includes("presentation"))
-      return "📽️";
-    return "📎";
-  };
+  const getFileIcon = fileType => getFileTypeInfo(fileType).emoji;
 
   const handleReconnect = useCallback(() => {
     setIsConnected(false);
@@ -663,6 +651,8 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
                                       ? "bg-blue-600/50 hover:bg-blue-600/70 text-white"
                                       : "bg-gray-100 hover:bg-gray-200 text-gray-900"
                                   }`}
+                                  aria-label={`Preview file: ${file.name}`}
+                                  type="button"
                                 >
                                   <span className="text-lg">
                                     {getFileIcon(file.type)}
@@ -731,8 +721,10 @@ const GroupChat = ({ group, onBack, embedded = false }) => {
                 <button
                   onClick={() => handleRemoveFileMention(file.id)}
                   className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                  aria-label={`Remove file mention: ${file.name}`}
+                  type="button"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3 w-3" aria-hidden="true" />
                 </button>
               </div>
             ))}
