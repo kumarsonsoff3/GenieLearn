@@ -3,6 +3,8 @@
  * Tracks user activities in localStorage and provides methods to retrieve them
  */
 
+import { escapeHtml } from './sanitize';
+
 const ACTIVITY_STORAGE_KEY = "genielearn_user_activities";
 const MAX_ACTIVITIES = 50; // Keep last 50 activities
 
@@ -28,8 +30,8 @@ export const addActivity = (type, message, detail, metadata = {}) => {
     const newActivity = {
       id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type,
-      message,
-      detail,
+      message: escapeHtml(message),
+      detail: escapeHtml(detail),
       timestamp: new Date().toISOString(),
       ...metadata,
     };
@@ -52,10 +54,15 @@ export const addActivity = (type, message, detail, metadata = {}) => {
 
 /**
  * Get recent activities (default: last 10)
+ * Sanitizes the data as a defense-in-depth measure
  */
 export const getRecentActivities = (limit = 10) => {
   const activities = getActivities();
-  return activities.slice(0, limit);
+  return activities.slice(0, limit).map(activity => ({
+    ...activity,
+    message: typeof activity.message === 'string' ? escapeHtml(activity.message) : activity.message,
+    detail: typeof activity.detail === 'string' ? escapeHtml(activity.detail) : activity.detail,
+  }));
 };
 
 /**
@@ -89,7 +96,7 @@ export const trackGroupJoin = (groupId, groupName, memberCount) => {
     "group_join",
     `Joined ${groupName}`,
     `${memberCount} members`,
-    { groupId, groupName }
+    { groupId, groupName: escapeHtml(groupName) }
   );
 };
 
@@ -101,7 +108,7 @@ export const trackMessage = (groupId, groupName) => {
     "message",
     `Sent a message in ${groupName}`,
     "Group chat activity",
-    { groupId, groupName }
+    { groupId, groupName: escapeHtml(groupName) }
   );
 };
 
@@ -111,8 +118,8 @@ export const trackMessage = (groupId, groupName) => {
 export const trackFileUpload = (groupId, groupName, fileName) => {
   return addActivity("file_upload", `Uploaded file in ${groupName}`, fileName, {
     groupId,
-    groupName,
-    fileName,
+    groupName: escapeHtml(groupName),
+    fileName: escapeHtml(fileName),
   });
 };
 
@@ -136,6 +143,6 @@ export const trackGroupCreate = (groupId, groupName) => {
     "group_create",
     `Created group ${groupName}`,
     "New study group",
-    { groupId, groupName }
+    { groupId, groupName: escapeHtml(groupName) }
   );
 };
