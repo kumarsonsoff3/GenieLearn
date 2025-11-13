@@ -40,8 +40,29 @@ export async function POST(request) {
       );
     }
 
+    // Parse session data to get user ID
+    let sessionData;
+    try {
+      sessionData = JSON.parse(sessionCookie.value);
+    } catch (error) {
+      console.error("Session parse error:", error);
+      return NextResponse.json(
+        { error: "Invalid session format" },
+        { status: 401 }
+      );
+    }
+
+    const userId = sessionData.userId;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Invalid session - user ID not found" },
+        { status: 401 }
+      );
+    }
+
     // Create admin client for file access
-    const { Client, Storage } = await import("node-appwrite");
+    const { Client, Storage, Databases } = await import("node-appwrite");
     const client = new Client();
     client
       .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
@@ -49,6 +70,54 @@ export async function POST(request) {
       .setKey(process.env.APPWRITE_API_KEY);
 
     const storage = new Storage(client);
+    const databases = new Databases(client);
+    const { Query } = await import("node-appwrite");
+
+    // Get file metadata to check authorization
+    // Note: fileId is the storage file ID, need to query by file_id field
+    try {
+      const fileResults = await databases.listDocuments(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID,
+        [Query.equal("file_id", fileId), Query.limit(1)]
+      );
+
+      if (fileResults.documents.length === 0) {
+        return NextResponse.json(
+          { error: "File not found in database" },
+          { status: 404 }
+        );
+      }
+
+      const fileDoc = fileResults.documents[0];
+
+      // Get the group to verify membership
+      const group = await databases.getDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
+        fileDoc.group_id
+      );
+
+      // Check if user is a member of the group
+      if (!group.members?.includes(userId)) {
+        return NextResponse.json(
+          { error: "You don't have permission to access this file" },
+          { status: 403 }
+        );
+      }
+    } catch (authError) {
+      console.error("Authorization check error:", authError);
+      if (authError.code === 404) {
+        return NextResponse.json(
+          { error: "File or group not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Failed to verify file access permissions" },
+        { status: 500 }
+      );
+    }
 
     // Download the file from Appwrite Storage
     const fileBuffer = await storage.getFileDownload(
