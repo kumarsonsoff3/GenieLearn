@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import useApi from "./useApi";
 import useAuth from "./useAuth";
+import { trackProfileUpdate } from "../utils/activityTracker";
+import { arraysEqual } from "../lib/utils";
 
 /**
  * Custom hook for managing profile form and editing logic
@@ -125,8 +127,10 @@ const useProfileForm = () => {
 
     return (
       formData.name !== (user.name || "") ||
-      JSON.stringify(formData.subjects_of_interest) !==
-        JSON.stringify(user.subjects_of_interest || [])
+      !arraysEqual(
+        formData.subjects_of_interest,
+        user.subjects_of_interest || []
+      )
     );
   }, [user, formData]);
 
@@ -168,6 +172,24 @@ const useProfileForm = () => {
 
         // Use the new updateProfile function for immediate UI updates
         await updateProfile(submitData);
+
+        // Track profile update activity
+        if (submitData.name !== user.name) {
+          trackProfileUpdate("name", `Changed name to ${submitData.name}`);
+        }
+        if (
+          !arraysEqual(
+            submitData.subjects_of_interest,
+            user.subjects_of_interest
+          )
+        ) {
+          trackProfileUpdate(
+            "interests",
+            `Updated to ${submitData.subjects_of_interest.length} subject${
+              submitData.subjects_of_interest.length !== 1 ? "s" : ""
+            }`
+          );
+        }
 
         // Show success and exit editing mode
         setSuccess(true);

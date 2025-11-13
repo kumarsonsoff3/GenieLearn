@@ -14,6 +14,7 @@ import { Search, Users, Globe, RefreshCw } from "lucide-react";
 import api from "../utils/enhancedApi";
 import { useToast } from "./ToastProvider";
 import { Button } from "./ui/button";
+import { trackGroupJoin } from "../utils/activityTracker";
 
 const GroupsView = () => {
   const { user } = useSelector(state => state.auth);
@@ -65,9 +66,10 @@ const GroupsView = () => {
   }, [fetchGroups, showSuccess, showError]);
 
   const handleJoinGroup = useCallback(
-    async groupId => {
+    async (groupId, groupName, memberCount) => {
       try {
         await api.post(`/groups/${groupId}/join`);
+        trackGroupJoin(groupId, groupName, memberCount);
         showSuccess("Successfully joined the group!");
         fetchGroups();
       } catch (error) {
@@ -141,10 +143,6 @@ const GroupsView = () => {
     })
   );
 
-  console.log("Debug - Public Groups:", publicGroups.length);
-  console.log("Debug - My Groups:", myGroups.length);
-  console.log("Debug - Filtered Public Groups:", filteredPublicGroups.length);
-
   if (loading) {
     return (
       <Layout>
@@ -167,15 +165,15 @@ const GroupsView = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-semibold text-gray-900">
               Study Groups
             </h1>
-            <p className="text-gray-600 mt-2">
-              Collaborate and learn together with your peers
+            <p className="text-sm text-gray-600 mt-1">
+              Join groups and collaborate with peers
             </p>
           </div>
           <div className="flex gap-2">
@@ -184,12 +182,11 @@ const GroupsView = () => {
               disabled={refreshing}
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="border-gray-300 hover:bg-gray-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
               />
-              Refresh
             </Button>
             <CreateGroupModal onGroupCreated={handleGroupCreated} />
           </div>
@@ -198,24 +195,30 @@ const GroupsView = () => {
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search groups..."
+              placeholder="Find a group..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full"
+              className="pl-9 pr-4 py-2 w-full max-w-md border-gray-300 focus:border-gray-400"
             />
           </div>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="my-groups" className="gap-2">
+          <TabsList className="mb-6 bg-transparent border-b border-gray-200 rounded-none p-0 h-auto">
+            <TabsTrigger
+              value="my-groups"
+              className="gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent"
+            >
               <Users className="h-4 w-4" />
               My Groups ({myGroups.length})
             </TabsTrigger>
-            <TabsTrigger value="discover" className="gap-2">
+            <TabsTrigger
+              value="discover"
+              className="gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent"
+            >
               <Globe className="h-4 w-4" />
               Discover ({filteredPublicGroups.length})
             </TabsTrigger>
@@ -224,22 +227,19 @@ const GroupsView = () => {
           {/* My Groups Tab */}
           <TabsContent value="my-groups">
             {filteredMyGroups.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">
+              <div className="text-center py-16 border border-gray-200 rounded-md">
+                <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-600 mb-3">
                   {searchQuery
                     ? "No groups found matching your search"
-                    : "You haven't joined any groups yet"}
+                    : "You haven&apos;t joined any groups yet"}
                 </p>
                 {!searchQuery && (
-                  <CreateGroupModal
-                    onGroupCreated={handleGroupCreated}
-                    buttonClassName="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                  />
+                  <CreateGroupModal onGroupCreated={handleGroupCreated} />
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredMyGroups.map(group => (
                   <GroupCard
                     key={group.id}
@@ -257,16 +257,16 @@ const GroupsView = () => {
           {/* Discover Tab */}
           <TabsContent value="discover">
             {filteredPublicGroups.length === 0 ? (
-              <div className="text-center py-12">
-                <Globe className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600">
+              <div className="text-center py-16 border border-gray-200 rounded-md">
+                <Globe className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-600">
                   {searchQuery
                     ? "No public groups found matching your search"
                     : "No public groups available"}
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredPublicGroups.map(group => (
                   <GroupCard
                     key={group.id}
@@ -274,7 +274,9 @@ const GroupsView = () => {
                     isExpanded={false}
                     onToggle={() => handleOpenGroup(group.id)}
                     isMember={false}
-                    onJoin={() => handleJoinGroup(group.id)}
+                    onJoin={() =>
+                      handleJoinGroup(group.id, group.name, group.member_count)
+                    }
                   />
                 ))}
               </div>

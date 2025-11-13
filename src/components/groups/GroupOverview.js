@@ -26,6 +26,7 @@ import {
 import api from "../../utils/enhancedApi";
 import { LoadingSpinner } from "../ui/loading-spinner";
 import FilePreviewModal from "./FilePreviewModal";
+import { getFileTypeInfo } from "../../lib/utils";
 
 const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
   const { user } = useSelector(state => state.auth);
@@ -33,6 +34,7 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
   const [loading, setLoading] = useState(true);
   const [previewFile, setPreviewFile] = useState(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [memberCount, setMemberCount] = useState(group.member_count || 0);
 
   const fetchRecentFiles = useCallback(async () => {
     try {
@@ -49,9 +51,22 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
     }
   }, [group.id]);
 
+  const fetchMemberCount = useCallback(async () => {
+    try {
+      const response = await api.get(`/groups/${group.id}/members`);
+      const members = response.data || [];
+      setMemberCount(members.length);
+    } catch (error) {
+      console.error("Error fetching member count:", error);
+      // Fallback to group.member_count if API fails
+      setMemberCount(group.member_count || 0);
+    }
+  }, [group.id, group.member_count]);
+
   useEffect(() => {
     fetchRecentFiles();
-  }, [fetchRecentFiles]);
+    fetchMemberCount();
+  }, [fetchRecentFiles, fetchMemberCount]);
 
   const handlePreviewFile = file => {
     setPreviewFile(file);
@@ -80,27 +95,20 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
   };
 
   const getFileIcon = fileType => {
-    if (!fileType) return <FileIcon className="h-5 w-5 text-gray-400" />;
-
-    if (fileType.startsWith("image/")) {
-      return <ImageIcon className="h-5 w-5 text-blue-500" />;
-    } else if (fileType.includes("pdf")) {
-      return <FileText className="h-5 w-5 text-red-500" />;
-    } else if (
-      fileType.includes("zip") ||
-      fileType.includes("rar") ||
-      fileType.includes("tar")
-    ) {
-      return <FileArchive className="h-5 w-5 text-orange-500" />;
-    } else if (
-      fileType.includes("code") ||
-      fileType.includes("javascript") ||
-      fileType.includes("python")
-    ) {
-      return <FileCode className="h-5 w-5 text-green-500" />;
-    } else {
-      return <FileIcon className="h-5 w-5 text-gray-400" />;
-    }
+    const { iconType } = getFileTypeInfo(fileType);
+    const iconMap = {
+      image: <ImageIcon className="h-5 w-5 text-blue-500" />,
+      pdf: <FileText className="h-5 w-5 text-red-500" />,
+      video: <FileText className="h-5 w-5 text-purple-500" />,
+      audio: <FileText className="h-5 w-5 text-pink-500" />,
+      code: <FileCode className="h-5 w-5 text-green-500" />,
+      document: <FileText className="h-5 w-5 text-blue-700" />,
+      spreadsheet: <FileText className="h-5 w-5 text-green-700" />,
+      presentation: <FileText className="h-5 w-5 text-orange-700" />,
+      archive: <FileArchive className="h-5 w-5 text-orange-500" />,
+      file: <FileIcon className="h-5 w-5 text-gray-400" />,
+    };
+    return iconMap[iconType] || <FileIcon className="h-5 w-5 text-gray-400" />;
   };
 
   const formatFileSize = bytes => {
@@ -239,7 +247,7 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
               <Users className="h-4 w-4 text-gray-600 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  {group.member_count || group.members?.length || 0} members
+                  {memberCount} {memberCount === 1 ? "member" : "members"}
                 </p>
                 <Button
                   variant="link"

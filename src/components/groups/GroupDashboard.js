@@ -63,40 +63,40 @@ const GroupDashboard = ({ group, onClose, onRefresh }) => {
   return (
     <div className="fixed inset-0 z-50 bg-gray-50 overflow-hidden flex flex-col">
       {/* GitHub-Style Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto">
           {/* Top Bar */}
-          <div className="px-6 py-4 flex items-center justify-between">
+          <div className="px-6 py-3 flex items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="hover:bg-gray-100"
+                className="hover:bg-gray-100 -ml-2"
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-3 flex-1">
                 <div className="flex items-center gap-2">
                   {groupData.is_public ? (
-                    <Globe className="h-5 w-5 text-gray-600" />
+                    <Globe className="h-4 w-4 text-gray-600" />
                   ) : (
-                    <Lock className="h-5 w-5 text-gray-600" />
+                    <Lock className="h-4 w-4 text-gray-600" />
                   )}
-                  <h1 className="text-xl font-semibold text-gray-900">
+                  <h1 className="text-lg font-semibold text-gray-900">
                     {groupData.name}
                   </h1>
                 </div>
                 <Badge
-                  variant="outline"
-                  className="text-xs font-normal border-gray-300"
+                  variant="secondary"
+                  className="text-xs font-normal bg-gray-100 text-gray-700"
                 >
                   {groupData.is_public ? "Public" : "Private"}
                 </Badge>
                 {isCreator && (
                   <Badge
-                    variant="outline"
-                    className="text-xs font-normal border-yellow-300 text-yellow-700 bg-yellow-50"
+                    variant="secondary"
+                    className="text-xs font-normal bg-gray-100 text-gray-700"
                   >
                     <Crown className="h-3 w-3 mr-1" />
                     Owner
@@ -110,41 +110,36 @@ const GroupDashboard = ({ group, onClose, onRefresh }) => {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:text-purple-800"
+                className="gap-2 border-gray-300 hover:bg-gray-50"
                 onClick={handleFocusMode}
               >
                 <Brain className="h-4 w-4" />
                 Focus Mode
               </Button>
-              <Button variant="outline" size="sm" className="gap-2">
-                <GitFork className="h-4 w-4" />
-                Join
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Star className="h-4 w-4" />
-                Star
-              </Button>
               {isCreator && (
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-gray-300 hover:bg-gray-50"
+                >
                   <Settings className="h-4 w-4" />
                   Settings
                 </Button>
               )}
-              <Separator orientation="vertical" className="h-6" />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
                 className="hover:bg-gray-100"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
           {/* GitHub-Style Tab Navigation */}
           <div className="px-6">
-            <nav className="flex gap-0 -mb-px">
+            <nav className="flex gap-1 -mb-px">
               {tabs.map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -153,9 +148,9 @@ const GroupDashboard = ({ group, onClose, onRefresh }) => {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "relative px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200",
+                      "relative px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
                       isActive
-                        ? "border-orange-500 text-gray-900"
+                        ? "border-gray-900 text-gray-900"
                         : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
                     )}
                   >
@@ -172,7 +167,7 @@ const GroupDashboard = ({ group, onClose, onRefresh }) => {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-gray-50">
         <div className="container mx-auto px-6 py-6">
           {activeTab === "overview" && (
             <GroupOverview
@@ -184,7 +179,7 @@ const GroupDashboard = ({ group, onClose, onRefresh }) => {
           )}
 
           {activeTab === "chat" && (
-            <div className="bg-white rounded-lg border shadow-sm h-[calc(100vh-200px)]">
+            <div className="bg-white rounded-md border border-gray-200 h-[calc(100vh-200px)]">
               <GroupChat group={groupData} onBack={onClose} embedded={true} />
             </div>
           )}

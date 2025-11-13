@@ -76,6 +76,7 @@ export async function GET(request, { params }) {
       sender_id: message.sender_id,
       sender_name: message.sender_name,
       timestamp: message.timestamp,
+      mentioned_files: message.mentioned_files || null,
     }));
 
     return NextResponse.json(messageResponses);

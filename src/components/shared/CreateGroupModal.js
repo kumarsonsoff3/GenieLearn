@@ -15,6 +15,7 @@ import {
 } from "../ui/dialog";
 import { Users, Plus } from "lucide-react";
 import api from "../../utils/enhancedApi";
+import { trackGroupCreate } from "../../utils/activityTracker";
 
 const CreateGroupModal = ({
   trigger,
@@ -38,6 +39,11 @@ const CreateGroupModal = ({
 
     try {
       const response = await api.post("/groups/create", formData);
+
+      // Track activity
+      const groupId = response.data?.id || response.data?.$id;
+      const groupName = response.data?.name || formData.name;
+      trackGroupCreate(groupId, groupName);
 
       // Success - close modal and reset form
       setOpen(false);

@@ -41,6 +41,8 @@ import { Storage, ID } from "appwrite";
 import { createRealtimeClient } from "../../lib/appwrite";
 import { BUCKET_ID } from "../../lib/appwrite-config";
 import FilePreviewModal from "./FilePreviewModal";
+import { trackFileUpload } from "../../utils/activityTracker";
+import { getFileTypeInfo } from "../../lib/utils";
 
 const GroupFiles = ({ group, onRefresh }) => {
   const { user } = useSelector(state => state.auth);
@@ -206,6 +208,9 @@ const GroupFiles = ({ group, onRefresh }) => {
       const fileDoc = await response.json();
       showSuccess("File uploaded successfully!");
 
+      // Track file upload activity
+      trackFileUpload(group.id, group.name, fileToUpload.name);
+
       // Reset form
       setUploadDialogOpen(false);
       setFileToUpload(null);
@@ -270,22 +275,20 @@ const GroupFiles = ({ group, onRefresh }) => {
   };
 
   const getFileIcon = fileType => {
-    if (!fileType) return <File className="h-8 w-8 text-gray-500" />;
-
-    if (fileType.startsWith("image/")) {
-      return <FileImage className="h-8 w-8 text-blue-500" />;
-    } else if (
-      fileType.includes("text") ||
-      fileType.includes("code") ||
-      fileType.includes("javascript") ||
-      fileType.includes("json")
-    ) {
-      return <FileCode className="h-8 w-8 text-green-500" />;
-    } else if (fileType.includes("zip") || fileType.includes("rar")) {
-      return <FileArchive className="h-8 w-8 text-orange-500" />;
-    } else {
-      return <FileText className="h-8 w-8 text-gray-500" />;
-    }
+    const { iconType } = getFileTypeInfo(fileType);
+    const iconMap = {
+      image: <FileImage className="h-8 w-8 text-blue-500" />,
+      pdf: <FileText className="h-8 w-8 text-red-500" />,
+      video: <FileText className="h-8 w-8 text-purple-500" />,
+      audio: <FileText className="h-8 w-8 text-pink-500" />,
+      code: <FileCode className="h-8 w-8 text-green-500" />,
+      document: <FileText className="h-8 w-8 text-blue-700" />,
+      spreadsheet: <FileText className="h-8 w-8 text-green-700" />,
+      presentation: <FileText className="h-8 w-8 text-orange-700" />,
+      archive: <FileArchive className="h-8 w-8 text-orange-500" />,
+      file: <File className="h-8 w-8 text-gray-500" />,
+    };
+    return iconMap[iconType] || <File className="h-8 w-8 text-gray-500" />;
   };
 
   const formatFileSize = bytes => {

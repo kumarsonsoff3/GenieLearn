@@ -2,15 +2,86 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Download, ExternalLink, FileText, AlertCircle } from "lucide-react";
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  AlertCircle,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+} from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 
 const FilePreviewModal = ({ file, isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [summaryError, setSummaryError] = useState(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [currentFileId, setCurrentFileId] = useState(null);
 
   if (!file) return null;
+
+  // Reset summary when file changes
+  const fileId = file.$id || file.id || file.file_id;
+  if (fileId !== currentFileId) {
+    setCurrentFileId(fileId);
+    setSummary(null);
+    setSummaryError(null);
+    setSummaryOpen(false);
+    setLoading(true);
+    setError(null);
+  }
+
+  // Handle AI summarization
+  const handleSummarize = async () => {
+    setSummarizing(true);
+    setSummaryError(null);
+    setSummary(null);
+
+    try {
+      const storageFileId = getStorageFileId();
+      if (!storageFileId) {
+        throw new Error("File ID not found");
+      }
+
+      const response = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fileId: storageFileId,
+          fileName: file.filename || file.original_name,
+          fileType: file.file_type,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to summarize file");
+      }
+
+      const data = await response.json();
+      setSummary(data.summary);
+      setSummaryOpen(true);
+    } catch (err) {
+      setSummaryError(err.message);
+    } finally {
+      setSummarizing(false);
+    }
+  };
 
   // Get the actual storage file ID
   const getStorageFileId = () => {
@@ -127,15 +198,17 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
     switch (previewType) {
       case "image":
         return (
-          <div className="flex flex-col items-center justify-center h-full bg-gray-100 p-4">
+          <div className="relative w-full h-full bg-gray-100">
             {error ? (
-              <div className="text-center">
-                <AlertCircle className="h-16 w-16 text-red-400 mb-4 mx-auto" />
-                <p className="text-gray-600 mb-4">{error}</p>
-                <Button onClick={handleDownload} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Image
-                </Button>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <AlertCircle className="h-16 w-16 text-red-400 mb-4 mx-auto" />
+                  <p className="text-gray-600 mb-4">{error}</p>
+                  <Button onClick={handleDownload} variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Image
+                  </Button>
+                </div>
               </div>
             ) : (
               <Image
@@ -199,7 +272,7 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
 
       case "video":
         return (
-          <div className="flex items-center justify-center h-full bg-black p-4">
+          <div className="flex items-center justify-center w-full h-full bg-black">
             <video
               src={fileUrl}
               controls
@@ -217,7 +290,7 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
 
       case "audio":
         return (
-          <div className="flex flex-col items-center justify-center h-full p-8">
+          <div className="flex flex-col items-center justify-center w-full h-full bg-gray-50">
             <FileText className="h-24 w-24 text-gray-400 mb-6" />
             <h3 className="text-lg font-medium mb-4">
               {file.filename || file.original_name}
@@ -263,16 +336,56 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
     }
   };
 
+  // Check if file can be summarized
+  const canSummarize = () => {
+    const fileType = file.file_type || "";
+    const fileName = (file.filename || file.original_name || "").toLowerCase();
+    return (
+      fileType === "application/pdf" ||
+      fileName.endsWith(".pdf") ||
+      fileName.endsWith(".txt") ||
+      fileType.includes("text") ||
+      fileType.includes("word") ||
+      fileType.includes("document") ||
+      /\.(doc|docx|txt|rtf|odt)$/i.test(fileName)
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl h-[90vh] p-0">
+      <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col">
         {/* Header */}
-        <DialogHeader className="px-6 py-4 border-b">
+        <DialogHeader className="px-6 py-4 border-b shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold truncate pr-4">
               {file.filename || file.original_name}
             </DialogTitle>
             <div className="flex items-center gap-2">
+              {canSummarize() && (
+                <Button
+                  onClick={handleSummarize}
+                  disabled={summarizing}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 border-blue-200"
+                  aria-label={`Summarize ${
+                    file.filename || file.original_name
+                  } using AI`}
+                  title="Generate an AI-powered summary of this document"
+                >
+                  {summarizing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Summarizing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 text-blue-600" />
+                      Summarize with AI
+                    </>
+                  )}
+                </Button>
+              )}
               <Button
                 onClick={handleDownload}
                 variant="outline"
@@ -298,8 +411,70 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
           )}
         </DialogHeader>
 
+        {/* AI Summary Section */}
+        {(summary || summaryError) && (
+          <div className="px-6 py-3 border-b bg-gradient-to-r from-blue-50 to-purple-50 shrink-0">
+            <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
+              <CollapsibleTrigger
+                className="flex items-center justify-between w-full text-left"
+                aria-label={
+                  summaryOpen ? "Collapse AI summary" : "Expand AI summary"
+                }
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-gray-900">AI Summary</span>
+                </div>
+                {summaryOpen ? (
+                  <ChevronUp
+                    className="h-4 w-4 text-gray-600"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <ChevronDown
+                    className="h-4 w-4 text-gray-600"
+                    aria-hidden="true"
+                  />
+                )}
+              </CollapsibleTrigger>
+              <CollapsibleContent
+                className="mt-3"
+                role="region"
+                aria-label="AI-generated summary content"
+              >
+                {summaryError ? (
+                  <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                    <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm text-red-700 mb-2">
+                        {summaryError}
+                      </p>
+                      <Button
+                        onClick={handleSummarize}
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        Try Again
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-white rounded-lg border border-blue-200 shadow-sm max-h-96 overflow-y-auto">
+                    <div className="prose prose-sm max-w-none text-gray-700">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {summary}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        )}
+
         {/* Preview Area */}
-        <div className="relative flex-1 overflow-hidden">
+        <div className="relative flex-1 min-h-0 overflow-hidden">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
               <div className="text-center">
@@ -325,7 +500,7 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
         </div>
 
         {/* Footer with file info */}
-        <div className="px-6 py-3 border-t bg-gray-50 text-sm text-gray-600">
+        <div className="px-6 py-3 border-t bg-gray-50 text-sm text-gray-600 shrink-0">
           <div className="flex items-center justify-between">
             <span>
               Size:{" "}

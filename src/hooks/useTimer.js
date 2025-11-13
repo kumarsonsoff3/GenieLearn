@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { trackFocusSession } from "../utils/activityTracker";
 
 const DEFAULT_DURATION = 25;
 
@@ -51,6 +52,9 @@ export function useTimer({ onComplete }) {
     setIsCompleted(true);
     const currentDuration = durationRef.current;
     saveProgress(currentDuration, true);
+
+    // Track activity
+    trackFocusSession(currentDuration);
 
     if (onComplete) {
       onComplete(currentDuration);
@@ -179,7 +183,8 @@ export function useTimer({ onComplete }) {
     [isRunning]
   );
 
-  const progress = duration > 0 ? ((duration * 60 - timeLeft) / (duration * 60)) * 100 : 0;
+  const progress =
+    duration > 0 ? ((duration * 60 - timeLeft) / (duration * 60)) * 100 : 0;
 
   return {
     duration,
