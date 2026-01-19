@@ -152,7 +152,7 @@ const GroupMembers = ({ group, isCreator, onRefresh }) => {
   const filteredMembers = members.filter(
     member =>
       member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      member.email?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   if (loading) {
@@ -289,7 +289,10 @@ const GroupMembers = ({ group, isCreator, onRefresh }) => {
                           {member.email}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p
+                        className="text-xs text-gray-500 mt-1"
+                        suppressHydrationWarning
+                      >
                         Joined {formatDate(member.joined_at)}
                       </p>
                     </div>

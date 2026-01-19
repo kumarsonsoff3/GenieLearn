@@ -45,7 +45,7 @@ const GroupCard = ({
     <Card
       className={cn(
         "border border-gray-200 hover:border-gray-300 transition-colors",
-        isExpanded ? "border-gray-400" : ""
+        isExpanded ? "border-gray-400" : "",
       )}
     >
       <CardHeader className="pb-3">
@@ -84,7 +84,7 @@ const GroupCard = ({
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>{formatDate(group.created_at)}</span>
+            <span suppressHydrationWarning>{formatDate(group.created_at)}</span>
           </div>
           {group.message_count !== undefined && (
             <div className="flex items-center gap-1">

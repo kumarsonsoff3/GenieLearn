@@ -585,7 +585,7 @@ const FilePreviewModal = ({ file, isOpen, onClose }) => {
                 : "Unknown"}
             </span>
             <span>Type: {file.file_type || "Unknown"}</span>
-            <span>
+            <span suppressHydrationWarning>
               Uploaded:{" "}
               {file.uploaded_at
                 ? new Date(file.uploaded_at).toLocaleDateString()

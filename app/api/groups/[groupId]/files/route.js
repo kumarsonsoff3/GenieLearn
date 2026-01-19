@@ -10,11 +10,11 @@ export async function GET(request, { params }) {
     if (!session) {
       return NextResponse.json(
         { detail: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const { groupId } = params;
+    const { groupId } = await params;
 
     // Create admin client
     const adminClient = new Client()
@@ -32,7 +32,7 @@ export async function GET(request, { params }) {
         Query.equal("group_id", groupId),
         Query.orderDesc("uploaded_at"),
         Query.limit(100),
-      ]
+      ],
     );
 
     // Enrich files with uploader names
@@ -44,7 +44,7 @@ export async function GET(request, { params }) {
               process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
               process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID ||
                 "user_profiles",
-              [Query.equal("user_id", file.uploaded_by), Query.limit(1)]
+              [Query.equal("user_id", file.uploaded_by), Query.limit(1)],
             );
 
             if (userProfile.documents.length > 0) {
@@ -60,7 +60,7 @@ export async function GET(request, { params }) {
           console.error("Error fetching user profile:", err);
         }
         return file;
-      })
+      }),
     );
 
     return NextResponse.json(enrichedFiles);
@@ -68,7 +68,7 @@ export async function GET(request, { params }) {
     console.error("Error fetching group files:", error);
     return NextResponse.json(
       { detail: error.message || "Failed to fetch files" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

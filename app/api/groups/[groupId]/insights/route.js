@@ -10,11 +10,11 @@ export async function GET(request, { params }) {
     if (!session) {
       return NextResponse.json(
         { detail: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const { groupId } = params;
+    const { groupId } = await params;
 
     // Create admin client
     const adminClient = new Client()
@@ -28,21 +28,21 @@ export async function GET(request, { params }) {
     const group = await databases.getDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
-      groupId
+      groupId,
     );
 
     // Get total messages
     const { total: totalMessages } = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
-      [Query.equal("group_id", groupId), Query.limit(1)]
+      [Query.equal("group_id", groupId), Query.limit(1)],
     );
 
     // Get total files
     const { total: totalFiles } = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID,
-      [Query.equal("group_id", groupId), Query.limit(1)]
+      [Query.equal("group_id", groupId), Query.limit(1)],
     );
 
     // Calculate messages this week
@@ -55,7 +55,7 @@ export async function GET(request, { params }) {
         Query.equal("group_id", groupId),
         Query.greaterThan("timestamp", oneWeekAgo.toISOString()),
         Query.limit(1),
-      ]
+      ],
     );
 
     // Calculate files this week
@@ -66,14 +66,14 @@ export async function GET(request, { params }) {
         Query.equal("group_id", groupId),
         Query.greaterThan("uploaded_at", oneWeekAgo.toISOString()),
         Query.limit(1),
-      ]
+      ],
     );
 
     // Calculate average messages per day
     const groupCreatedAt = new Date(group.created_at);
     const daysSinceCreation = Math.max(
       1,
-      Math.floor((new Date() - groupCreatedAt) / (1000 * 60 * 60 * 24))
+      Math.floor((new Date() - groupCreatedAt) / (1000 * 60 * 60 * 24)),
     );
     const averageMessagesPerDay = totalMessages / daysSinceCreation;
 
@@ -81,7 +81,7 @@ export async function GET(request, { params }) {
     const { documents: messages } = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_MESSAGES_COLLECTION_ID,
-      [Query.equal("group_id", groupId), Query.limit(1000)]
+      [Query.equal("group_id", groupId), Query.limit(1000)],
     );
 
     const contributorMap = {};
@@ -125,7 +125,7 @@ export async function GET(request, { params }) {
       engagementRate:
         totalMessages > 0
           ? `${Math.round(
-              (topContributors.length / (group.members?.length || 1)) * 100
+              (topContributors.length / (group.members?.length || 1)) * 100,
             )}%`
           : "0%",
       activeMembers: topContributors.length,
@@ -135,7 +135,7 @@ export async function GET(request, { params }) {
     console.error("Error fetching group insights:", error);
     return NextResponse.json(
       { detail: error.message || "Failed to fetch insights" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

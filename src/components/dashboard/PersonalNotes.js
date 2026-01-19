@@ -47,6 +47,12 @@ const PersonalNotes = ({ limit, showCreateButton = true }) => {
   const [deleting, setDeleting] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [filePreviewOpen, setFilePreviewOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Track client-side mount to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
@@ -164,6 +170,12 @@ const PersonalNotes = ({ limit, showCreateButton = true }) => {
 
   const formatDate = dateString => {
     const date = new Date(dateString);
+
+    // Return static format during SSR to avoid hydration mismatch
+    if (!isMounted) {
+      return date.toLocaleDateString();
+    }
+
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -295,7 +307,10 @@ const PersonalNotes = ({ limit, showCreateButton = true }) => {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-gray-500">
-                      <div className="flex items-center gap-1">
+                      <div
+                        className="flex items-center gap-1"
+                        suppressHydrationWarning
+                      >
                         <Calendar className="h-3 w-3" />
                         {formatDate(note.created_at)}
                       </div>
@@ -370,7 +385,10 @@ const PersonalNotes = ({ limit, showCreateButton = true }) => {
                 )}
               </div>
 
-              <div className="text-xs text-gray-500 flex items-center gap-4">
+              <div
+                className="text-xs text-gray-500 flex items-center gap-4"
+                suppressHydrationWarning
+              >
                 <span>Created: {formatDate(selectedNote.created_at)}</span>
                 {selectedNote.updated_at !== selectedNote.created_at && (
                   <span>Updated: {formatDate(selectedNote.updated_at)}</span>
