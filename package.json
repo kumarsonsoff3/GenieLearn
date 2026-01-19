@@ -54,7 +54,6 @@
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
-    "youtubei.js": "^16.0.1",
     "zod": "^3.24.4"
   },
   "scripts": {
