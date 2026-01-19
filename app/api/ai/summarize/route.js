@@ -15,7 +15,7 @@ export async function POST(request) {
           error:
             "AI service not configured. Please add GEMINI_API_KEY to environment variables.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -24,7 +24,7 @@ export async function POST(request) {
     if (!fileId) {
       return NextResponse.json(
         { error: "File ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,7 +35,7 @@ export async function POST(request) {
     if (!sessionCookie) {
       return NextResponse.json(
         { error: "Unauthorized - No session found" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -47,7 +47,7 @@ export async function POST(request) {
       console.error("Session parse error:", error);
       return NextResponse.json(
         { error: "Invalid session format" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -56,7 +56,7 @@ export async function POST(request) {
     if (!userId) {
       return NextResponse.json(
         { error: "Invalid session - user ID not found" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -78,13 +78,13 @@ export async function POST(request) {
       const fileResults = await databases.listDocuments(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
         process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID,
-        [Query.equal("file_id", fileId), Query.limit(1)]
+        [Query.equal("file_id", fileId), Query.limit(1)],
       );
 
       if (fileResults.documents.length === 0) {
         return NextResponse.json(
           { error: "File not found in database" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -94,14 +94,14 @@ export async function POST(request) {
       const group = await databases.getDocument(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
         process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
-        fileDoc.group_id
+        fileDoc.group_id,
       );
 
       // Check if user is a member of the group
       if (!group.members?.includes(userId)) {
         return NextResponse.json(
           { error: "You don't have permission to access this file" },
-          { status: 403 }
+          { status: 403 },
         );
       }
     } catch (authError) {
@@ -109,19 +109,19 @@ export async function POST(request) {
       if (authError.code === 404) {
         return NextResponse.json(
           { error: "File or group not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
       return NextResponse.json(
         { error: "Failed to verify file access permissions" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Download the file from Appwrite Storage
     const fileBuffer = await storage.getFileDownload(
       process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID,
-      fileId
+      fileId,
     );
 
     // Convert ArrayBuffer to Buffer for processing
@@ -188,7 +188,7 @@ export async function POST(request) {
             error:
               "Failed to extract text from PDF. The file may be corrupted or image-based.",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     } else if (
@@ -203,7 +203,7 @@ export async function POST(request) {
           error:
             "Word document summarization is not currently supported. Please convert your document to PDF or TXT format and try again.",
         },
-        { status: 501 }
+        { status: 501 },
       );
     } else {
       return NextResponse.json(
@@ -211,7 +211,7 @@ export async function POST(request) {
           error:
             "File type not supported for summarization. Currently supported: TXT, PDF",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -225,13 +225,12 @@ export async function POST(request) {
     if (!fileContent.trim()) {
       return NextResponse.json(
         { error: "File appears to be empty or content could not be extracted" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Generate summary using Gemini 2.5 Flash (stable version)
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-latest",
     });
 
     const prompt = `Please provide a clear and concise summary of the following document. Include the main points, key takeaways, and any important details. Keep the summary well-structured and easy to understand.
@@ -263,7 +262,7 @@ Summary:`;
           error:
             "Invalid API key. Please check your GEMINI_API_KEY configuration.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -273,13 +272,13 @@ Summary:`;
     ) {
       return NextResponse.json(
         { error: "AI service quota exceeded. Please try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
     return NextResponse.json(
       { error: error.message || "Failed to generate summary" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

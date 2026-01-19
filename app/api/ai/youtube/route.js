@@ -45,7 +45,7 @@ export async function POST(request) {
           error:
             "AI service not configured. Please add GEMINI_API_KEY to environment variables.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -54,7 +54,7 @@ export async function POST(request) {
     if (!youtubeUrl) {
       return NextResponse.json(
         { error: "YouTube URL is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -65,7 +65,7 @@ export async function POST(request) {
     if (!sessionCookie) {
       return NextResponse.json(
         { error: "Unauthorized - No session found" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -77,7 +77,7 @@ export async function POST(request) {
       console.error("Session parse error:", error);
       return NextResponse.json(
         { error: "Invalid session format" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -86,7 +86,7 @@ export async function POST(request) {
     if (!userId) {
       return NextResponse.json(
         { error: "Invalid session - user ID not found" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -99,7 +99,7 @@ export async function POST(request) {
           error:
             "Invalid YouTube URL. Please provide a valid YouTube video link.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -149,7 +149,7 @@ export async function POST(request) {
         .filter(seg => seg.text.trim());
 
       console.log(
-        `[YouTube API] Transcript fetched. Segments: ${transcript?.length || 0}`
+        `[YouTube API] Transcript fetched. Segments: ${transcript?.length || 0}`,
       );
 
       if (!transcript || transcript.length === 0) {
@@ -167,7 +167,7 @@ export async function POST(request) {
             suggestion:
               "Look for videos with the 'CC' (closed captions) icon on YouTube",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -197,7 +197,7 @@ export async function POST(request) {
         errorMessage +=
           "The video owner has disabled transcripts for this video.";
         suggestions.push(
-          "Try finding a similar video from a different creator"
+          "Try finding a similar video from a different creator",
         );
       } else if (
         errorMsg.includes("unavailable") ||
@@ -215,7 +215,7 @@ export async function POST(request) {
           "No captions or subtitles are available for this video.";
         suggestions.push("Look for videos with the 'CC' icon on YouTube");
         suggestions.push(
-          "Try videos from educational channels that typically include captions"
+          "Try videos from educational channels that typically include captions",
         );
       } else if (errorMsg.includes("cors") || errorMsg.includes("network")) {
         errorMessage += "Network error occurred while fetching the transcript.";
@@ -238,13 +238,13 @@ export async function POST(request) {
           technicalDetails:
             process.env.NODE_ENV === "development" ? error.stack : undefined,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Generate summary using Gemini 2.5 Flash
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-flash-latest",
     });
 
     const prompt = `You are an expert educational content summarizer. Analyze the following YouTube video transcript and create a comprehensive, well-structured summary in markdown format.
@@ -307,7 +307,7 @@ Please format your response using proper markdown with headings (##, ###), bulle
           error:
             "Invalid API key. Please check your GEMINI_API_KEY configuration.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -317,13 +317,13 @@ Please format your response using proper markdown with headings (##, ###), bulle
     ) {
       return NextResponse.json(
         { error: "AI service quota exceeded. Please try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
     return NextResponse.json(
       { error: error.message || "Failed to generate video summary" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
