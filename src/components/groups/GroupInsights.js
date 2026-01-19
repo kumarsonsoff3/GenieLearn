@@ -23,6 +23,17 @@ const GroupInsights = ({ group }) => {
   const { showError } = useToast();
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [daysActive, setDaysActive] = useState(0);
+
+  // Calculate days active on client side only to avoid hydration mismatch
+  useEffect(() => {
+    if (group.created_at) {
+      const days = Math.floor(
+        (new Date() - new Date(group.created_at)) / (1000 * 60 * 60 * 24),
+      );
+      setDaysActive(days || 0);
+    }
+  }, [group.created_at]);
 
   const fetchInsights = useCallback(async () => {
     try {
@@ -191,17 +202,17 @@ const GroupInsights = ({ group }) => {
             </div>
             <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
               <span className="text-sm text-gray-700">Group Created</span>
-              <span className="text-base font-semibold text-gray-900">
+              <span
+                className="text-base font-semibold text-gray-900"
+                suppressHydrationWarning
+              >
                 {formatDate(group.created_at)}
               </span>
             </div>
             <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
               <span className="text-sm text-gray-700">Days Active</span>
               <span className="text-base font-semibold text-gray-900">
-                {Math.floor(
-                  (new Date() - new Date(group.created_at)) /
-                    (1000 * 60 * 60 * 24)
-                ) || 0}
+                {daysActive}
               </span>
             </div>
           </CardContent>

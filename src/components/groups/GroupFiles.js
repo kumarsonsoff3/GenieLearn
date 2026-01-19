@@ -123,7 +123,7 @@ const GroupFiles = ({ group, onRefresh }) => {
         } else if (eventType.includes(".update")) {
           // File updated - update in list
           setFiles(prev =>
-            prev.map(file => (file.$id === payload.$id ? payload : file))
+            prev.map(file => (file.$id === payload.$id ? payload : file)),
           );
         }
       });
@@ -178,10 +178,10 @@ const GroupFiles = ({ group, onRefresh }) => {
         undefined, // permissions (use bucket defaults)
         progress => {
           const percentage = Math.round(
-            (progress.chunksUploaded / progress.chunksTotal) * 100
+            (progress.chunksUploaded / progress.chunksTotal) * 100,
           );
           setUploadProgress(percentage);
-        }
+        },
       );
 
       // Now create the database record via API
@@ -260,7 +260,7 @@ const GroupFiles = ({ group, onRefresh }) => {
     try {
       // Delete via API (backend will handle both storage and database)
       const response = await api.delete(
-        `/groups/${group.id}/files/${file.$id}`
+        `/groups/${group.id}/files/${file.$id}`,
       );
 
       showSuccess("File deleted successfully");
@@ -314,7 +314,7 @@ const GroupFiles = ({ group, onRefresh }) => {
   const filteredFiles = files.filter(
     file =>
       file.filename?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      file.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      file.description?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   if (loading) {
@@ -350,7 +350,7 @@ const GroupFiles = ({ group, onRefresh }) => {
                       {Math.round(
                         (parseInt(process.env.NEXT_PUBLIC_MAX_FILE_SIZE) ||
                           50 * 1024 * 1024) /
-                          (1024 * 1024)
+                          (1024 * 1024),
                       )}
                       MB)
                     </Label>
@@ -472,7 +472,9 @@ const GroupFiles = ({ group, onRefresh }) => {
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                      <span>{formatDate(file.uploaded_at)}</span>
+                      <span suppressHydrationWarning>
+                        {formatDate(file.uploaded_at)}
+                      </span>
                     </div>
                   </div>
                   <DropdownMenu>

@@ -10,11 +10,11 @@ export async function GET(request, { params }) {
     if (!session) {
       return NextResponse.json(
         { detail: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const { groupId } = params;
+    const { groupId } = await params;
 
     // Create admin client
     const adminClient = new Client()
@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
     const group = await databases.getDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
-      groupId
+      groupId,
     );
 
     // Fetch member details from user_profiles
@@ -38,7 +38,7 @@ export async function GET(request, { params }) {
         const profile = await databases.getDocument(
           process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
           process.env.NEXT_PUBLIC_APPWRITE_USER_PROFILES_COLLECTION_ID,
-          memberId
+          memberId,
         );
         memberProfiles.push({
           $id: profile.$id,
@@ -58,7 +58,7 @@ export async function GET(request, { params }) {
     console.error("Error fetching group members:", error);
     return NextResponse.json(
       { detail: error.message || "Failed to fetch members" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

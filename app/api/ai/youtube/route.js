@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { cookies } from "next/headers";
-import { Innertube } from "youtubei.js";
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -19,21 +18,6 @@ function extractVideoId(url) {
   }
 
   return null;
-}
-
-// Format duration from seconds to readable format
-function formatDuration(seconds) {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
 }
 
 export async function POST(request) {
@@ -103,151 +87,15 @@ export async function POST(request) {
       );
     }
 
-    // Fetch transcript with multiple language fallback
-    let transcript;
-    let transcriptText = "";
-    let transcriptLanguage = "en";
-    let videoTitle = "YouTube Video"; // Default title
+    const normalizedUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    console.log(`[YouTube API] Processing video: ${normalizedUrl}`);
 
-    try {
-      console.log(`[YouTube API] Fetching transcript for video ID: ${videoId}`);
-
-      // Initialize YouTube client
-      const youtube = await Innertube.create();
-
-      // Get video info
-      const info = await youtube.getInfo(videoId);
-
-      // Extract video title
-      videoTitle = info.basic_info?.title || "YouTube Video";
-      console.log(`[YouTube API] Video title: ${videoTitle}`);
-
-      // Get transcript/captions
-      const transcriptData = await info.getTranscript();
-
-      if (!transcriptData || !transcriptData.transcript) {
-        throw new Error("No transcript available");
-      }
-
-      // Extract transcript segments with safe navigation
-      const segments =
-        transcriptData.transcript.content?.body?.initial_segments;
-
-      if (!segments || segments.length === 0) {
-        throw new Error("No transcript segments available");
-      }
-
-      transcript = segments
-        .map(segment => {
-          const runs = segment.snippet?.runs || [];
-          return {
-            text: runs.map(run => run.text || "").join(""),
-            start: (segment.start_ms || 0) / 1000,
-            duration: ((segment.end_ms || 0) - (segment.start_ms || 0)) / 1000,
-          };
-        })
-        .filter(seg => seg.text.trim());
-
-      console.log(
-        `[YouTube API] Transcript fetched. Segments: ${transcript?.length || 0}`,
-      );
-
-      if (!transcript || transcript.length === 0) {
-        // Try fetching video metadata to provide better error context
-        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        return NextResponse.json(
-          {
-            error:
-              "No transcript available for this video. This could be because:\n\n" +
-              "• The video doesn't have captions/subtitles enabled\n" +
-              "• The video is private or age-restricted\n" +
-              "• Auto-generated captions are disabled\n\n" +
-              "Please try another video that has captions enabled, or ask the video creator to add captions.",
-            videoUrl: videoUrl,
-            suggestion:
-              "Look for videos with the 'CC' (closed captions) icon on YouTube",
-          },
-          { status: 400 },
-        );
-      }
-
-      // Combine transcript segments
-      transcriptText = transcript.map(segment => segment.text).join(" ");
-
-      // Limit content length to avoid token limits (approximately 50,000 characters)
-      if (transcriptText.length > 50000) {
-        transcriptText =
-          transcriptText.substring(0, 50000) +
-          "\n\n[Transcript truncated due to length...]";
-      }
-    } catch (error) {
-      console.error("Transcript fetch error:", error);
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-      });
-
-      // Provide detailed error based on error type
-      let errorMessage = "Failed to fetch video transcript. ";
-      let suggestions = [];
-      const errorMsg = error.message?.toLowerCase() || "";
-
-      if (errorMsg.includes("transcript") && errorMsg.includes("disabled")) {
-        errorMessage +=
-          "The video owner has disabled transcripts for this video.";
-        suggestions.push(
-          "Try finding a similar video from a different creator",
-        );
-      } else if (
-        errorMsg.includes("unavailable") ||
-        errorMsg.includes("not available")
-      ) {
-        errorMessage += "The video is unavailable, private, or restricted.";
-        suggestions.push("Check if the video is public and accessible");
-        suggestions.push("Ensure the video exists and is not deleted");
-      } else if (
-        errorMsg.includes("could not") ||
-        errorMsg.includes("no transcript") ||
-        errorMsg.includes("no caption")
-      ) {
-        errorMessage +=
-          "No captions or subtitles are available for this video.";
-        suggestions.push("Look for videos with the 'CC' icon on YouTube");
-        suggestions.push(
-          "Try videos from educational channels that typically include captions",
-        );
-      } else if (errorMsg.includes("cors") || errorMsg.includes("network")) {
-        errorMessage += "Network error occurred while fetching the transcript.";
-        suggestions.push("Check your internet connection");
-        suggestions.push("Try again in a few moments");
-      } else {
-        errorMessage +=
-          "An unexpected error occurred while fetching the transcript.";
-        suggestions.push("Verify the YouTube URL is correct and complete");
-        suggestions.push("Try a different video with confirmed captions");
-        suggestions.push("Check browser console for detailed error logs");
-      }
-
-      return NextResponse.json(
-        {
-          error: errorMessage,
-          suggestions: suggestions,
-          videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
-          details: error.message,
-          technicalDetails:
-            process.env.NODE_ENV === "development" ? error.stack : undefined,
-        },
-        { status: 400 },
-      );
-    }
-
-    // Generate summary using Gemini 2.5 Flash
+    // Use Gemini 2.5 Flash with native YouTube support
     const model = genAI.getGenerativeModel({
       model: "gemini-flash-latest",
     });
 
-    const prompt = `You are an expert educational content summarizer. Analyze the following YouTube video transcript and create a comprehensive, well-structured summary in markdown format.
+    const prompt = `You are an expert educational content summarizer. Analyze this YouTube video and create a comprehensive, well-structured summary in markdown format.
 
 Your summary should include:
 
@@ -276,26 +124,46 @@ Your summary should include:
 ## 🔖 Tags
 (Suggest 5-7 relevant tags for categorizing this content)
 
----
+Please format your response using proper markdown with headings (##, ###), bullet points (-), numbered lists (1., 2., 3.), **bold**, and *italic* where appropriate to make it easy to read and understand.
 
-**Video Transcript:**
-${transcriptText}
+Also, at the very beginning of your response, provide the video title in this exact format:
+VIDEO_TITLE: [actual video title here]
 
----
+Then continue with the summary.`;
 
-Please format your response using proper markdown with headings (##, ###), bullet points (-), numbered lists (1., 2., 3.), **bold**, and *italic* where appropriate to make it easy to read and understand.`;
+    // Send YouTube URL directly to Gemini - it handles the video natively!
+    const result = await model.generateContent([
+      {
+        fileData: {
+          mimeType: "video/mp4",
+          fileUri: normalizedUrl,
+        },
+      },
+      { text: prompt },
+    ]);
 
-    const result = await model.generateContent(prompt);
     const response = await result.response;
-    const summary = response.text();
+    const fullText = response.text();
+
+    // Extract video title from response
+    let videoTitle = "YouTube Video";
+    let summary = fullText;
+
+    const titleMatch = fullText.match(/VIDEO_TITLE:\s*(.+?)(?:\n|$)/);
+    if (titleMatch) {
+      videoTitle = titleMatch[1].trim();
+      // Remove the title line from the summary
+      summary = fullText.replace(/VIDEO_TITLE:\s*.+?\n/, "").trim();
+    }
+
+    console.log(`[YouTube API] Successfully summarized: ${videoTitle}`);
 
     return NextResponse.json({
       success: true,
       summary: summary,
       videoTitle: videoTitle,
       videoId: videoId,
-      youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
-      transcriptLength: transcriptText.length,
+      youtubeUrl: normalizedUrl,
     });
   } catch (error) {
     console.error("YouTube Summarization Error:", error);
@@ -318,6 +186,24 @@ Please format your response using proper markdown with headings (##, ###), bulle
       return NextResponse.json(
         { error: "AI service quota exceeded. Please try again later." },
         { status: 429 },
+      );
+    }
+
+    if (
+      error.message?.includes("video") ||
+      error.message?.includes("YouTube") ||
+      error.message?.includes("could not")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Could not process this YouTube video. This could be because:\n\n" +
+            "• The video is private, age-restricted, or unavailable\n" +
+            "• The video is too long (try videos under 1 hour)\n" +
+            "• The video has restrictions that prevent analysis\n\n" +
+            "Please try a different video.",
+        },
+        { status: 400 },
       );
     }
 

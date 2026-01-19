@@ -1,8 +1,26 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Edit, Mail, Calendar, BookOpen } from "lucide-react";
 
 const ProfileHeader = ({ user, editing, onEditClick }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   if (!user) return null;
+
+  const formatJoinDate = () => {
+    if (!user.created_at) return "Recently";
+    // Use static format during SSR to avoid hydration mismatch
+    return new Date(user.created_at).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+    });
+  };
 
   return (
     <div className="mb-8">
@@ -39,15 +57,7 @@ const ProfileHeader = ({ user, editing, onEditClick }) => {
         </div>
         <div className="flex items-center space-x-2">
           <Calendar className="h-4 w-4" />
-          <span>
-            Joined{" "}
-            {user.created_at
-              ? new Date(user.created_at).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                })
-              : "Recently"}
-          </span>
+          <span suppressHydrationWarning>Joined {formatJoinDate()}</span>
         </div>
         <div className="flex items-center space-x-2">
           <BookOpen className="h-4 w-4" />

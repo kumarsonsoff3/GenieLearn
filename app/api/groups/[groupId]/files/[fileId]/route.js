@@ -10,11 +10,11 @@ export async function DELETE(request, { params }) {
     if (!session) {
       return NextResponse.json(
         { detail: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const { fileId, groupId } = params;
+    const { fileId, groupId } = await params;
 
     // Parse session data to get user ID
     let sessionData;
@@ -23,7 +23,7 @@ export async function DELETE(request, { params }) {
     } catch {
       return NextResponse.json(
         { detail: "Invalid session format" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -42,14 +42,14 @@ export async function DELETE(request, { params }) {
     const file = await databases.getDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID,
-      fileId
+      fileId,
     );
 
     // Get group details
     const group = await databases.getDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
-      groupId
+      groupId,
     );
 
     // Check if user is the file uploader or group creator
@@ -59,7 +59,7 @@ export async function DELETE(request, { params }) {
     if (!isUploader && !isGroupCreator) {
       return NextResponse.json(
         { detail: "You don't have permission to delete this file" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -76,7 +76,7 @@ export async function DELETE(request, { params }) {
     await databases.deleteDocument(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_GROUP_FILES_COLLECTION_ID,
-      fileId
+      fileId,
     );
 
     return NextResponse.json({
@@ -87,7 +87,7 @@ export async function DELETE(request, { params }) {
     console.error("Error deleting file:", error);
     return NextResponse.json(
       { detail: error.message || "Failed to delete file" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

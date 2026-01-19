@@ -36,6 +36,12 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
   const [previewFile, setPreviewFile] = useState(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [memberCount, setMemberCount] = useState(group.member_count || 0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Track client-side mount to avoid hydration mismatch with time-based rendering
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const fetchRecentFiles = useCallback(async () => {
     try {
@@ -84,6 +90,9 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
   };
 
   const formatTimeAgo = dateString => {
+    // Return static format during SSR to avoid hydration mismatch
+    if (!isMounted) return formatDate(dateString);
+
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
@@ -210,7 +219,7 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
                         </span>
                       </div>
                       <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                        <span>
+                        <span suppressHydrationWarning>
                           {formatTimeAgo(file.uploaded_at || file.upload_date)}
                         </span>
                       </div>
@@ -268,7 +277,10 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
               <Calendar className="h-4 w-4 text-gray-600 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">Created</p>
-                <p className="text-xs text-gray-600 mt-0.5">
+                <p
+                  className="text-xs text-gray-600 mt-0.5"
+                  suppressHydrationWarning
+                >
                   {formatDate(group.$createdAt || group.created_at)}
                 </p>
               </div>
@@ -280,9 +292,12 @@ const GroupOverview = ({ group, isCreator, onNavigateToTab }) => {
                 <p className="text-sm font-medium text-gray-900">
                   Last updated
                 </p>
-                <p className="text-xs text-gray-600 mt-0.5">
+                <p
+                  className="text-xs text-gray-600 mt-0.5"
+                  suppressHydrationWarning
+                >
                   {formatTimeAgo(
-                    group.$updatedAt || group.updated_at || group.$createdAt
+                    group.$updatedAt || group.updated_at || group.$createdAt,
                   )}
                 </p>
               </div>
