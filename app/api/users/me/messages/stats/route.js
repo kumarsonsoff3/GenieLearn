@@ -10,7 +10,7 @@ export async function GET() {
     if (!session) {
       return NextResponse.json(
         { detail: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -21,7 +21,7 @@ export async function GET() {
     } catch {
       return NextResponse.json(
         { detail: "Invalid session format, please login again" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -43,17 +43,18 @@ export async function GET() {
       [
         Query.equal("sender_id", userId),
         Query.limit(1), // We only need the count
-      ]
+      ],
     );
 
-    // Get groups where user is a member
-    const { documents: userGroups } = await databases.listDocuments(
+    // Get all groups and filter where user is a member
+    const { documents: allGroups } = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_GROUPS_COLLECTION_ID,
-      [
-        Query.search("members", userId),
-        Query.limit(100), // Reasonable limit for user groups
-      ]
+      [Query.limit(1000)],
+    );
+
+    const userGroups = allGroups.filter(
+      group => group.members && group.members.includes(userId),
     );
 
     const stats = {
@@ -69,7 +70,7 @@ export async function GET() {
     console.error("Get user message stats error:", error);
     return NextResponse.json(
       { detail: error.message || "Failed to fetch message statistics" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
